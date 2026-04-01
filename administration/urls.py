@@ -1,0 +1,26 @@
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('stats/',                    views.stats),
+    path('membres/',                  views.membres_list),
+    path('membres/<int:pk>/',         views.membre_detail),
+    path('demandes/',                 views.demandes_list),
+    path('demandes/<int:pk>/',        views.demande_detail),
+    path('replays/',                  views.replays_list),
+    path('replays/<int:pk>/',         views.replay_detail),
+    path('guides/',                   views.guides_list),
+    path('guides/<int:pk>/',          views.guide_detail),
+    path('config/',                   views.config_list),
+    path('config/public/',            views.config_public),
+    path('config/update/',            views.config_update),
+    path('images/upload/',            views.image_upload),
+    path('liste-attente/',            views.liste_attente_admin),
+    path('liste-attente/notifier/',   views.notifier_liste_attente),
+    path('newsletter/',               views.envoyer_newsletter),
+    path('maintenance/',              views.toggle_maintenance),
+    path('export/membres/',           views.export_membres_csv),
+    path('export/demandes/',          views.export_demandes_csv),
+    path('export/temoignages/',       views.export_temoignages_csv),
+    path('export/attente/',           views.export_attente_csv),
+]
