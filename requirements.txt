@@ -10,3 +10,6 @@ psycopg2-binary
 python-decouple
 dj-database-url
 fedapay
+cloudinary
+cloudinary
+cloudinary

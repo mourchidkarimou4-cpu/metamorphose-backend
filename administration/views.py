@@ -1,8 +1,11 @@
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.permissions import IsAdminUser, AllowAny
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import get_user_model
+from django.conf import settings
+from django.http import HttpResponse
 from contenu.models import Guide, Replay, DemandeContact
 from .models import SiteConfig
 from .serializers import (
@@ -10,6 +13,7 @@ from .serializers import (
     AdminReplaySerializer, AdminDemandeSerializer,
     SiteConfigSerializer,
 )
+import csv
 
 User = get_user_model()
 
@@ -46,12 +50,9 @@ def membre_detail(request, pk):
         user = User.objects.get(pk=pk)
     except User.DoesNotExist:
         return Response({'detail': 'Introuvable.'}, status=404)
-
     if request.method == 'DELETE':
         user.delete()
         return Response(status=204)
-
-    # PATCH — modifier actif, formule, etc.
     s = AdminUserSerializer(user, data=request.data, partial=True)
     if s.is_valid():
         s.save()
@@ -72,11 +73,9 @@ def demande_detail(request, pk):
         d = DemandeContact.objects.get(pk=pk)
     except DemandeContact.DoesNotExist:
         return Response({'detail': 'Introuvable.'}, status=404)
-
     if request.method == 'DELETE':
         d.delete()
         return Response(status=204)
-
     s = AdminDemandeSerializer(d, data=request.data, partial=True)
     if s.is_valid():
         s.save()
@@ -102,11 +101,9 @@ def replay_detail(request, pk):
         r = Replay.objects.get(pk=pk)
     except Replay.DoesNotExist:
         return Response({'detail': 'Introuvable.'}, status=404)
-
     if request.method == 'DELETE':
         r.delete()
         return Response(status=204)
-
     s = AdminReplaySerializer(r, data=request.data, partial=True)
     if s.is_valid():
         s.save()
@@ -135,11 +132,9 @@ def guide_detail(request, pk):
         g = Guide.objects.get(pk=pk)
     except Guide.DoesNotExist:
         return Response({'detail': 'Introuvable.'}, status=404)
-
     if request.method == 'DELETE':
         g.delete()
         return Response(status=204)
-
     s = AdminGuideSerializer(g, data=request.data, partial=True)
     if s.is_valid():
         s.save()
@@ -155,10 +150,9 @@ def config_list(request):
 @api_view(['POST'])
 @permission_classes([IsAdminUser])
 def config_update(request):
-    """Met à jour ou crée une clé de config"""
-    cle    = request.data.get('cle')
-    valeur = request.data.get('valeur')
-    section= request.data.get('section', 'general')
+    cle     = request.data.get('cle')
+    valeur  = request.data.get('valeur')
+    section = request.data.get('section', 'general')
     if not cle:
         return Response({'detail': 'Clé requise.'}, status=400)
     obj, _ = SiteConfig.objects.update_or_create(
@@ -170,56 +164,39 @@ def config_update(request):
 @permission_classes([AllowAny])
 def config_public(request):
     """Textes publics du site — accessible sans authentification"""
-    from rest_framework.permissions import AllowAny
     return Response(SiteConfigSerializer(SiteConfig.objects.all().order_by('section'), many=True).data)
 
-@api_view(['GET'])
-@permission_classes([AllowAny])
-def config_public(request):
-    """Textes publics du site — accessible sans authentification"""
-    from rest_framework.permissions import AllowAny
-    return Response(SiteConfigSerializer(SiteConfig.objects.all().order_by('section'), many=True).data)
-
+# ── IMAGE UPLOAD — Cloudinary ──────────────────────────────────
 @api_view(['POST'])
 @permission_classes([IsAdminUser])
+@parser_classes([MultiPartParser, FormParser])
 def image_upload(request):
     fichier = request.FILES.get('fichier')
     cle     = request.data.get('cle')
     section = request.data.get('section', 'images')
+
     if not fichier or not cle:
         return Response({'detail': 'Fichier et cle requis.'}, status=400)
-    import os
-    from django.core.files.storage import default_storage
-    from django.conf import settings
-    ext      = fichier.name.split('.')[-1].lower()
-    filename = f"images/{cle}.{ext}"
-    path     = default_storage.save(filename, fichier)
-    url      = request.build_absolute_uri(settings.MEDIA_URL + path)
-    obj, _   = SiteConfig.objects.update_or_create(
+
+    try:
+        import cloudinary.uploader
+        result = cloudinary.uploader.upload(
+            fichier,
+            folder='metamorphose',
+            public_id=cle,
+            overwrite=True,
+            resource_type='auto',
+        )
+        url = result.get('secure_url', '')
+    except Exception as e:
+        return Response({'detail': f'Erreur Cloudinary : {str(e)}'}, status=500)
+
+    obj, _ = SiteConfig.objects.update_or_create(
         cle=cle, defaults={'valeur': url, 'section': section}
     )
     return Response({'url': url, 'cle': cle})
 
-@api_view(['POST'])
-@permission_classes([IsAdminUser])
-def image_upload(request):
-    fichier = request.FILES.get('fichier')
-    cle     = request.data.get('cle')
-    section = request.data.get('section', 'images')
-    if not fichier or not cle:
-        return Response({'detail': 'Fichier et cle requis.'}, status=400)
-    import os
-    from django.core.files.storage import default_storage
-    from django.conf import settings
-    ext      = fichier.name.split('.')[-1].lower()
-    filename = f"images/{cle}.{ext}"
-    path     = default_storage.save(filename, fichier)
-    url      = request.build_absolute_uri(settings.MEDIA_URL + path)
-    obj, _   = SiteConfig.objects.update_or_create(
-        cle=cle, defaults={'valeur': url, 'section': section}
-    )
-    return Response({'url': url, 'cle': cle})
-
+# ── LISTE ATTENTE ──────────────────────────────────────────────
 @api_view(["GET"])
 @permission_classes([IsAdminUser])
 def liste_attente_admin(request):
@@ -275,7 +252,13 @@ def envoyer_newsletter(request):
     count = 0
     for user in users:
         try:
-            send_mail(subject=sujet, message=f"Bonjour {user.first_name or user.email},\n\n{message}\n\nPrélia Apedo", from_email=settings.DEFAULT_FROM_EMAIL, recipient_list=[user.email], fail_silently=True)
+            send_mail(
+                subject=sujet,
+                message=f"Bonjour {user.first_name or user.email},\n\n{message}\n\nPrélia Apedo",
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[user.email],
+                fail_silently=True,
+            )
             count += 1
         except: pass
     return Response({"detail": f"Email envoyé à {count} membre{'s' if count>1 else ''}."})
@@ -284,7 +267,10 @@ def envoyer_newsletter(request):
 @permission_classes([IsAdminUser])
 def toggle_maintenance(request):
     actif = request.data.get("actif", False)
-    SiteConfig.objects.update_or_create(cle="maintenance_active", defaults={"valeur":"1" if actif else "0","section":"systeme"})
+    SiteConfig.objects.update_or_create(
+        cle="maintenance_active",
+        defaults={"valeur":"1" if actif else "0","section":"systeme"}
+    )
     return Response({"maintenance": actif})
 
 @api_view(["GET"])
