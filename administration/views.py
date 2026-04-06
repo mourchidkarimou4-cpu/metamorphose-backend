@@ -324,3 +324,72 @@ def export_demandes_csv(request):
     for d in DemandeContact.objects.all().order_by("-date"):
         writer.writerow([d.prenom or "", d.nom or "", d.email or "", d.whatsapp or "", d.pays or "", d.formule or "", d.message or "", d.date.strftime("%d/%m/%Y %H:%M")])
     return response
+
+# ── PARTENAIRES ────────────────────────────────────────────────
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def partenaires_public(request):
+    """Liste des partenaires actifs — public"""
+    from .models import Partenaire
+    partenaires = Partenaire.objects.filter(actif=True)
+    data = [{'id':p.id,'nom':p.nom,'logo':p.logo,'lien':p.lien,'ordre':p.ordre} for p in partenaires]
+    return Response(data)
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAdminUser])
+def partenaires_list(request):
+    """Liste et création partenaires — admin"""
+    from .models import Partenaire
+    if request.method == 'GET':
+        partenaires = Partenaire.objects.all()
+        data = [{'id':p.id,'nom':p.nom,'logo':p.logo,'lien':p.lien,'ordre':p.ordre,'actif':p.actif} for p in partenaires]
+        return Response(data)
+    # POST — créer
+    from .models import Partenaire
+    nom   = request.data.get('nom','')
+    logo  = request.data.get('logo','')
+    lien  = request.data.get('lien','')
+    ordre = request.data.get('ordre', 0)
+    if not nom:
+        return Response({'detail':'Nom requis.'}, status=400)
+    p = Partenaire.objects.create(nom=nom, logo=logo, lien=lien, ordre=ordre)
+    return Response({'id':p.id,'nom':p.nom,'logo':p.logo,'lien':p.lien,'ordre':p.ordre,'actif':p.actif}, status=201)
+
+@api_view(['PATCH', 'DELETE'])
+@permission_classes([IsAdminUser])
+def partenaire_detail(request, pk):
+    """Modifier ou supprimer un partenaire"""
+    from .models import Partenaire
+    try:
+        p = Partenaire.objects.get(pk=pk)
+    except Partenaire.DoesNotExist:
+        return Response({'detail':'Introuvable.'}, status=404)
+    if request.method == 'DELETE':
+        p.delete()
+        return Response(status=204)
+    # PATCH
+    for field in ['nom','logo','lien','ordre','actif']:
+        if field in request.data:
+            setattr(p, field, request.data[field])
+    p.save()
+    return Response({'id':p.id,'nom':p.nom,'logo':p.logo,'lien':p.lien,'ordre':p.ordre,'actif':p.actif})
+
+# ── UPLOAD LOGO PARTENAIRE ─────────────────────────────────────
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def partenaire_logo_upload(request):
+    """Upload logo partenaire vers Cloudinary"""
+    fichier = request.FILES.get('fichier')
+    if not fichier:
+        return Response({'detail':'Fichier requis.'}, status=400)
+    try:
+        import cloudinary.uploader
+        result = cloudinary.uploader.upload(
+            fichier,
+            folder='metamorphose/partenaires',
+            overwrite=True,
+            resource_type='image',
+        )
+        return Response({'url': result.get('secure_url','')})
+    except Exception as e:
+        return Response({'detail': str(e)}, status=500)
