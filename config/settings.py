@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'cadeaux',
     'avis',
     'paiement',
+    'learning',
 ]
 
 # ── MIDDLEWARE ─────────────────────────────────────────────────

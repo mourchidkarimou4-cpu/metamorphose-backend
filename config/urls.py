@@ -16,6 +16,7 @@ urlpatterns = [
     path('api/avis/', include('avis.urls')),
     path('api/paiement/', include('paiement.urls')),
     path('api/aura/', proxy_aura),
+    path('api/learning/', include('learning.urls')),
     # Media — fonctionne en dev ET en production
     re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
