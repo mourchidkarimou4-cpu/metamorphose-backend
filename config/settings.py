@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'avis',
     'paiement',
     'learning',
+    'tickets',
 ]
 
 # ── MIDDLEWARE ─────────────────────────────────────────────────
