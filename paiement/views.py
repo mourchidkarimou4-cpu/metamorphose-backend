@@ -1,18 +1,15 @@
 # paiement/views.py
-# Intégration FedaPay via API REST directe
+# Intégration Kkiapay — paiement frontend + webhook backend
 
-import requests
 import json
 import hmac
 import hashlib
+import requests
 from django.conf import settings
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from accounts.models import CustomUser
-
-FEDAPAY_BASE    = "https://sandbox-api.fedapay.com/v1"  # sandbox — changer en prod
-FEDAPAY_API_KEY = getattr(settings, "FEDAPAY_SECRET_KEY", "")
 
 PRIX_FORMULES = {
     "F1": 65000,
@@ -27,121 +24,62 @@ LABELS_FORMULES = {
     "F4": "Présentiel · Privé",
 }
 
-@api_view(["POST"])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def initier_paiement(request):
-    """Créer une transaction FedaPay et retourner le lien de paiement"""
-    formule  = request.data.get("formule")
-    callback = request.data.get("callback_url", "http://localhost:5173/paiement/confirmation")
-
+    formule = request.query_params.get("formule")
     if formule not in PRIX_FORMULES:
         return Response({"detail": "Formule invalide."}, status=400)
-
-    user   = request.user
-    montant= PRIX_FORMULES[formule]
-    label  = LABELS_FORMULES[formule]
-
-    headers = {
-        "Authorization": f"Bearer {FEDAPAY_API_KEY}",
-        "Content-Type":  "application/json",
-    }
-
-    payload = {
-        "description":   f"Méta'Morph'Ose — {label}",
-        "amount":         montant,
-        "currency":      {"iso": "XOF"},
-        "callback_url":   callback,
-        "customer": {
-            "firstname": user.first_name or user.email.split("@")[0],
-            "lastname":  user.last_name  or "",
-            "email":     user.email,
-            "phone_number": {
-                "number":  user.whatsapp or "",
-                "country": "BJ",
-            }
-        }
-    }
-
-    try:
-        res = requests.post(
-            f"{FEDAPAY_BASE}/transactions",
-            headers=headers,
-            json=payload,
-            timeout=15,
-        )
-        data = res.json()
-
-        if res.status_code not in [200, 201]:
-            return Response({"detail": data.get("message", "Erreur FedaPay.")}, status=400)
-
-        transaction_id  = data["v1/transaction"]["id"]
-        transaction_ref = data["v1/transaction"]["reference"]
-
-        # Générer le lien de paiement
-        token_res = requests.post(
-            f"{FEDAPAY_BASE}/transactions/{transaction_id}/token",
-            headers=headers,
-            timeout=15,
-        )
-        token_data  = token_res.json()
-        payment_url = token_data.get("url", "")
-
-        return Response({
-            "transaction_id":  transaction_id,
-            "reference":       transaction_ref,
-            "payment_url":     payment_url,
-            "montant":         montant,
-            "formule":         formule,
-            "formule_label":   label,
-        })
-
-    except requests.exceptions.ConnectionError:
-        return Response({"detail": "Impossible de contacter FedaPay. Mode sandbox non disponible en local."}, status=503)
-    except Exception as e:
-        return Response({"detail": str(e)}, status=500)
-
+    return Response({
+        "montant":       PRIX_FORMULES[formule],
+        "formule":       formule,
+        "formule_label": LABELS_FORMULES[formule],
+        "public_key":    getattr(settings, "KKIAPAY_PUBLIC_KEY", ""),
+        "sandbox":       getattr(settings, "KKIAPAY_SANDBOX", True),
+    })
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
-def webhook_fedapay(request):
-    """Webhook FedaPay — confirmation de paiement"""
-    secret = getattr(settings, "FEDAPAY_WEBHOOK_SECRET", "")
-
-    # Vérifier la signature
-    signature = request.headers.get("X-FEDAPAY-SIGNATURE", "")
-    body       = request.body
-    expected   = hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
-
-    if signature and secret and not hmac.compare_digest(signature, expected):
-        return Response({"detail": "Signature invalide."}, status=400)
-
-    data   = json.loads(body)
-    event  = data.get("name", "")
-    entity = data.get("entity", {})
-
-    if event == "transaction.approved":
-        ref   = entity.get("reference", "")
-        email = entity.get("customer", {}).get("email", "")
-        # Activer le compte membre
+def webhook_kkiapay(request):
+    secret    = getattr(settings, "KKIAPAY_PRIVATE_KEY", "")
+    signature = request.headers.get("X-KKIAPAY-SIGNATURE", "")
+    if signature and secret:
+        expected = hmac.new(secret.encode(), request.body, hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(signature, expected):
+            return Response({"detail": "Signature invalide."}, status=400)
+    status = request.data.get("status", "")
+    email  = request.data.get("customer", {}).get("email", "")
+    if status == "SUCCESS" and email:
         try:
             user = CustomUser.objects.get(email=email)
             user.actif = True
             user.save()
         except CustomUser.DoesNotExist:
             pass
-
     return Response({"status": "ok"})
 
-
-@api_view(["GET"])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
-def statut_paiement(request, transaction_id):
-    """Vérifier le statut d'une transaction"""
-    headers = {"Authorization": f"Bearer {FEDAPAY_API_KEY}"}
+def confirmer_paiement(request):
+    transaction_id = request.data.get("transaction_id")
+    formule        = request.data.get("formule")
+    if not transaction_id:
+        return Response({"detail": "transaction_id requis."}, status=400)
+    private_key = getattr(settings, "KKIAPAY_PRIVATE_KEY", "")
     try:
-        res  = requests.get(f"{FEDAPAY_BASE}/transactions/{transaction_id}", headers=headers, timeout=10)
+        res  = requests.get(
+            f"https://api.kkiapay.me/api/v1/transactions/{transaction_id}/status",
+            headers={"X-Private-Key": private_key},
+            timeout=10,
+        )
         data = res.json()
-        statut = data.get("v1/transaction", {}).get("status", "unknown")
-        return Response({"statut": statut, "transaction_id": transaction_id})
+        if data.get("status") != "SUCCESS":
+            return Response({"detail": "Paiement non confirmé."}, status=400)
     except Exception as e:
-        return Response({"detail": str(e)}, status=500)
+        return Response({"detail": f"Erreur vérification : {str(e)}"}, status=500)
+    user = request.user
+    user.actif = True
+    if formule in PRIX_FORMULES:
+        user.formule = formule
+    user.save()
+    return Response({"detail": "Paiement confirmé. Compte activé.", "formule": formule})
