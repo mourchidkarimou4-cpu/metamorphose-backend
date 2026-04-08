@@ -1,3 +1,4 @@
+import logging
 from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.permissions import IsAdminUser, AllowAny
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -16,6 +17,7 @@ from .serializers import (
 import csv
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 # ── STATS ──────────────────────────────────────────────────────
 @api_view(['GET'])
@@ -229,11 +231,13 @@ def notifier_liste_attente(request):
                 message=f"Bonjour {p.prenom or 'belle femme'},\n\nLes inscriptions sont maintenant ouvertes !\n\nPrélia Apedo",
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[p.email],
-                fail_silently=True,
+                fail_silently=False,
             )
-            p.notifie = True; p.save()
+            p.notifie = True
+            p.save()
             count += 1
-        except: pass
+        except Exception as e:
+            logger.error(f"Erreur envoi email liste attente à {p.email}: {e}")
     return Response({"detail": f"{count} personnes notifiées."})
 
 @api_view(["POST"])
@@ -257,10 +261,11 @@ def envoyer_newsletter(request):
                 message=f"Bonjour {user.first_name or user.email},\n\n{message}\n\nPrélia Apedo",
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[user.email],
-                fail_silently=True,
+                fail_silently=False,
             )
             count += 1
-        except: pass
+        except Exception as e:
+            logger.error(f"Erreur envoi newsletter à {user.email}: {e}")
     return Response({"detail": f"Email envoyé à {count} membre{'s' if count>1 else ''}."})
 
 @api_view(["POST"])

@@ -1,0 +1,23 @@
+# Environnement
+.env
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Base de données locale
+db.sqlite3
+
+# Fichiers statiques collectés
+staticfiles/
+
+# Médias uploadés en local
+media/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
