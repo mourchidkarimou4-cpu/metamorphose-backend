@@ -144,8 +144,6 @@ KKIAPAY_PRIVATE_KEY = env_config('KKIAPAY_PRIVATE_KEY', default='')
 KKIAPAY_SECRET_KEY  = env_config('KKIAPAY_SECRET_KEY',  default='')
 KKIAPAY_SANDBOX     = env_config('KKIAPAY_SANDBOX',     default='True', cast=bool)
 
-# ── GEMINI AI ──────────────────────────────────────────────────
-GEMINI_API_KEY = env_config('GEMINI_API_KEY', default='')
 
 # ── LOGGING ────────────────────────────────────────────────────
 LOGGING = {
