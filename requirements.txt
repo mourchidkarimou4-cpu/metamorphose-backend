@@ -1,32 +1,12 @@
-# Framework principal
-Django==6.0.3
-djangorestframework==3.17.1
-djangorestframework_simplejwt==5.5.1
-
-# CORS
-django-cors-headers==4.9.0
-
-# Base de données
-psycopg2-binary==2.9.11
-dj-database-url==3.1.2
-
-# Fichiers statiques
-whitenoise==6.12.0
-
-# Serveur production
-gunicorn==25.3.0
-
-# Images
-Pillow==12.1.1
-
-# Stockage cloud
-cloudinary==1.44.1
-
-# Variables d'environnement
-python-decouple==3.8
-
-# Requêtes HTTP (AgentIA proxy)
-requests==2.33.1
-
-# Génération PDF (certificats)
-reportlab==4.4.10
+Django==5.2.1
+djangorestframework
+djangorestframework-simplejwt
+django-cors-headers
+Pillow
+requests
+gunicorn
+whitenoise
+psycopg2-binary
+python-decouple
+dj-database-url
+fedapay

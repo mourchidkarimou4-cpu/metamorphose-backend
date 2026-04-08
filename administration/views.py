@@ -1,4 +1,3 @@
-import logging
 from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.permissions import IsAdminUser, AllowAny
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -17,7 +16,6 @@ from .serializers import (
 import csv
 
 User = get_user_model()
-logger = logging.getLogger(__name__)
 
 # ── STATS ──────────────────────────────────────────────────────
 @api_view(['GET'])
@@ -165,8 +163,12 @@ def config_update(request):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def config_public(request):
-    """Textes publics du site — accessible sans authentification"""
-    return Response(SiteConfigSerializer(SiteConfig.objects.all().order_by('section'), many=True).data)
+    """Textes publics du site — accessible sans authentification.
+    CORRECTION : filtre les sections sensibles (systeme, prive, admin, interne)
+    pour ne pas exposer accidentellement des données internes."""
+    _sections_privees = {'systeme', 'prive', 'admin', 'interne'}
+    qs = SiteConfig.objects.exclude(section__in=_sections_privees).order_by('section')
+    return Response(SiteConfigSerializer(qs, many=True).data)
 
 # ── IMAGE UPLOAD — Cloudinary ──────────────────────────────────
 @api_view(['POST'])
@@ -231,13 +233,11 @@ def notifier_liste_attente(request):
                 message=f"Bonjour {p.prenom or 'belle femme'},\n\nLes inscriptions sont maintenant ouvertes !\n\nPrélia Apedo",
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[p.email],
-                fail_silently=False,
+                fail_silently=True,
             )
-            p.notifie = True
-            p.save()
+            p.notifie = True; p.save()
             count += 1
-        except Exception as e:
-            logger.error(f"Erreur envoi email liste attente à {p.email}: {e}")
+        except: pass
     return Response({"detail": f"{count} personnes notifiées."})
 
 @api_view(["POST"])
@@ -261,11 +261,10 @@ def envoyer_newsletter(request):
                 message=f"Bonjour {user.first_name or user.email},\n\n{message}\n\nPrélia Apedo",
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[user.email],
-                fail_silently=False,
+                fail_silently=True,
             )
             count += 1
-        except Exception as e:
-            logger.error(f"Erreur envoi newsletter à {user.email}: {e}")
+        except: pass
     return Response({"detail": f"Email envoyé à {count} membre{'s' if count>1 else ''}."})
 
 @api_view(["POST"])
@@ -329,72 +328,3 @@ def export_demandes_csv(request):
     for d in DemandeContact.objects.all().order_by("-date"):
         writer.writerow([d.prenom or "", d.nom or "", d.email or "", d.whatsapp or "", d.pays or "", d.formule or "", d.message or "", d.date.strftime("%d/%m/%Y %H:%M")])
     return response
-
-# ── PARTENAIRES ────────────────────────────────────────────────
-@api_view(['GET'])
-@permission_classes([AllowAny])
-def partenaires_public(request):
-    """Liste des partenaires actifs — public"""
-    from .models import Partenaire
-    partenaires = Partenaire.objects.filter(actif=True)
-    data = [{'id':p.id,'nom':p.nom,'logo':p.logo,'lien':p.lien,'ordre':p.ordre} for p in partenaires]
-    return Response(data)
-
-@api_view(['GET', 'POST'])
-@permission_classes([IsAdminUser])
-def partenaires_list(request):
-    """Liste et création partenaires — admin"""
-    from .models import Partenaire
-    if request.method == 'GET':
-        partenaires = Partenaire.objects.all()
-        data = [{'id':p.id,'nom':p.nom,'logo':p.logo,'lien':p.lien,'ordre':p.ordre,'actif':p.actif} for p in partenaires]
-        return Response(data)
-    # POST — créer
-    from .models import Partenaire
-    nom   = request.data.get('nom','')
-    logo  = request.data.get('logo','')
-    lien  = request.data.get('lien','')
-    ordre = request.data.get('ordre', 0)
-    if not nom:
-        return Response({'detail':'Nom requis.'}, status=400)
-    p = Partenaire.objects.create(nom=nom, logo=logo, lien=lien, ordre=ordre)
-    return Response({'id':p.id,'nom':p.nom,'logo':p.logo,'lien':p.lien,'ordre':p.ordre,'actif':p.actif}, status=201)
-
-@api_view(['PATCH', 'DELETE'])
-@permission_classes([IsAdminUser])
-def partenaire_detail(request, pk):
-    """Modifier ou supprimer un partenaire"""
-    from .models import Partenaire
-    try:
-        p = Partenaire.objects.get(pk=pk)
-    except Partenaire.DoesNotExist:
-        return Response({'detail':'Introuvable.'}, status=404)
-    if request.method == 'DELETE':
-        p.delete()
-        return Response(status=204)
-    # PATCH
-    for field in ['nom','logo','lien','ordre','actif']:
-        if field in request.data:
-            setattr(p, field, request.data[field])
-    p.save()
-    return Response({'id':p.id,'nom':p.nom,'logo':p.logo,'lien':p.lien,'ordre':p.ordre,'actif':p.actif})
-
-# ── UPLOAD LOGO PARTENAIRE ─────────────────────────────────────
-@api_view(['POST'])
-@permission_classes([IsAdminUser])
-def partenaire_logo_upload(request):
-    """Upload logo partenaire vers Cloudinary"""
-    fichier = request.FILES.get('fichier')
-    if not fichier:
-        return Response({'detail':'Fichier requis.'}, status=400)
-    try:
-        import cloudinary.uploader
-        result = cloudinary.uploader.upload(
-            fichier,
-            folder='metamorphose/partenaires',
-            overwrite=True,
-            resource_type='image',
-        )
-        return Response({'url': result.get('secure_url','')})
-    except Exception as e:
-        return Response({'detail': str(e)}, status=500)
