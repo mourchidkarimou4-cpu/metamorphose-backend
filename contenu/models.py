@@ -33,3 +33,18 @@ class Replay(models.Model):
 
     def __str__(self):
         return f"S{self.semaine} — {self.titre}"
+
+
+class Abonne(models.Model):
+    email      = models.EmailField(unique=True)
+    prenom     = models.CharField(max_length=60, blank=True)
+    actif      = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Abonné newsletter'
+        verbose_name_plural = 'Abonnés newsletter'
+
+    def __str__(self):
+        return f"{self.email} — {'actif' if self.actif else 'désabonné'}"
