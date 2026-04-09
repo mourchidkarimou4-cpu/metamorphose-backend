@@ -8,7 +8,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ── SÉCURITÉ ───────────────────────────────────────────────────
 SECRET_KEY = env_config('SECRET_KEY', default='django-insecure-change-me-in-production')
 DEBUG      = env_config('DEBUG', default='True', cast=bool)
-ALLOWED_HOSTS = ['*'] if DEBUG else env_config('ALLOWED_HOSTS', default='localhost').split(',')
+ALLOWED_HOSTS = env_config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
 
 # ── APPLICATIONS ───────────────────────────────────────────────
 INSTALLED_APPS = [
@@ -19,6 +19,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'cloudinary_storage',
+    'cloudinary',
     'rest_framework_simplejwt',
     'corsheaders',
     'accounts',
@@ -108,6 +110,17 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 MEDIA_URL   = '/media/'
 MEDIA_ROOT  = BASE_DIR / 'media'
 
+# ── SÉCURITÉ HTTPS (prod uniquement) ──────────────────────────
+if not DEBUG:
+    SECURE_SSL_REDIRECT         = True
+    SECURE_HSTS_SECONDS         = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SESSION_COOKIE_SECURE       = True
+    CSRF_COOKIE_SECURE          = True
+    SECURE_BROWSER_XSS_FILTER   = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS             = 'DENY'
+
 # ── INTERNATIONALISATION ───────────────────────────────────────
 LANGUAGE_CODE     = 'fr-fr'
 TIME_ZONE         = 'Africa/Porto-Novo'
@@ -133,6 +146,8 @@ cloudinary.config(
     api_secret = env_config('CLOUDINARY_API_SECRET', default=''),
     secure     = True,
 )
+
+FRONTEND_URL = env_config('FRONTEND_URL', default='https://metamorphose.vercel.app')
 
 # ── FEDAPAY ────────────────────────────────────────────────────
 FEDAPAY_SECRET_KEY     = env_config('FEDAPAY_SECRET_KEY',     default='')

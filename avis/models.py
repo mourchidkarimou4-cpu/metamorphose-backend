@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+import cloudinary.models
 
 class Temoignage(models.Model):
     STATUTS = [
@@ -28,15 +29,29 @@ class Temoignage(models.Model):
     note        = models.IntegerField(choices=NOTES, default=5)
 
     # Vidéo
-    video_url   = models.URLField(blank=True)
-    video_fichier = models.FileField(upload_to='temoignages/videos/', blank=True, null=True)
+    video_url     = models.URLField(blank=True)
+    video_fichier = cloudinary.models.CloudinaryField(
+        'video', resource_type='video',
+        folder='metamorphose/temoignages/videos',
+        blank=True, null=True
+    )
 
     # Audio
-    audio_fichier = models.FileField(upload_to='temoignages/audios/', blank=True, null=True)
+    audio_fichier = cloudinary.models.CloudinaryField(
+        'audio', resource_type='raw',
+        folder='metamorphose/temoignages/audios',
+        blank=True, null=True
+    )
 
     # Photos
-    photo_avant = models.ImageField(upload_to='temoignages/avant/', blank=True, null=True)
-    photo_apres = models.ImageField(upload_to='temoignages/apres/', blank=True, null=True)
+    photo_avant = cloudinary.models.CloudinaryField(
+        'image', folder='metamorphose/temoignages/avant',
+        blank=True, null=True
+    )
+    photo_apres = cloudinary.models.CloudinaryField(
+        'image', folder='metamorphose/temoignages/apres',
+        blank=True, null=True
+    )
 
     # Gestion
     statut      = models.CharField(max_length=20, choices=STATUTS, default='en_attente')

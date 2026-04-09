@@ -78,7 +78,7 @@ def reserver(request):
 
 
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def verifier_ticket(request, code):
     """Vérifier un ticket par son code UUID (pour le scan QR)."""
     try:
@@ -172,11 +172,20 @@ def admin_evenement_detail(request, pk):
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
 def admin_tickets(request):
-    ev_id = request.query_params.get('evenement')
-    qs    = Ticket.objects.select_related('evenement', 'user').all()
+    ev_id  = request.query_params.get('evenement')
+    limit  = min(int(request.query_params.get('limit',  200)), 1000)
+    offset = int(request.query_params.get('offset', 0))
+    qs     = Ticket.objects.select_related('evenement', 'user').all()
     if ev_id:
         qs = qs.filter(evenement_id=ev_id)
-    return Response(TicketSerializer(qs, many=True).data)
+    total = qs.count()
+    page  = qs[offset:offset + limit]
+    return Response({
+        'total':   total,
+        'limit':   limit,
+        'offset':  offset,
+        'results': TicketSerializer(page, many=True).data,
+    })
 
 
 @api_view(['PATCH'])

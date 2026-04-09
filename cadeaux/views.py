@@ -2,6 +2,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.response import Response
 from django.utils import timezone
+from django.core.mail import send_mail
+from django.conf import settings
 from .models import CartesCadeaux
 from .serializers import CartePublicSerializer, CarteCommandeSerializer, CarteAdminSerializer
 
@@ -18,6 +20,29 @@ def commander_carte(request):
         # Expiration 1 an
         carte.date_expiration = date.today() + timedelta(days=365)
         carte.save()
+
+        # Email de confirmation à l'acheteur
+        try:
+            formule_label = dict(CartesCadeaux.FORMULES).get(carte.formule, carte.formule)
+            send_mail(
+                subject=f"Votre carte cadeau Méta'Morph'Ose — {carte.code}",
+                message=(
+                    f"Bonjour {carte.acheteur_nom},\n\n"
+                    f"Votre commande de carte cadeau a bien été reçue.\n\n"
+                    f"Formule : {formule_label}\n"
+                    f"Pour : {carte.destinataire_nom}\n"
+                    f"Code : {carte.code}\n\n"
+                    f"Prélia vous contactera sous 24h pour finaliser le paiement "
+                    f"et activer la carte.\n\n"
+                    f"Méta'Morph'Ose · White & Black"
+                ),
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[carte.acheteur_email],
+                fail_silently=True,
+            )
+        except Exception:
+            pass
+
         return Response({
             'code':    carte.code,
             'message': 'Votre commande est enregistrée. Prélia vous contactera sous 24h.',

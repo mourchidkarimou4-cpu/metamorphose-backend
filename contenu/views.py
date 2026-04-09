@@ -1,7 +1,9 @@
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
-from .models import Guide, Replay
+from django.core.mail import send_mail
+from django.conf import settings
+from .models import Guide, Replay, Abonne
 from .serializers import GuideSerializer, ReplaySerializer
 
 @api_view(['GET'])
@@ -14,13 +16,12 @@ def guides(request):
 @permission_classes([IsAuthenticated])
 def replays(request):
     formule = request.user.formule
+    if not formule:
+        return Response([])
     data = Replay.objects.filter(actif=True, formules__contains=formule).order_by('semaine')
     return Response(ReplaySerializer(data, many=True).data)
 
 
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
-from rest_framework.response import Response
 
 @api_view(['POST'])
 @permission_classes([AllowAny])

@@ -4,6 +4,7 @@
 import json
 import hmac
 import hashlib
+import logging
 import requests
 from django.conf import settings
 from rest_framework.decorators import api_view, permission_classes
@@ -58,14 +59,23 @@ def webhook_kkiapay(request):
             pass
     return Response({"status": "ok"})
 
+logger = logging.getLogger(__name__)
+
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def confirmer_paiement(request):
     transaction_id = request.data.get("transaction_id")
     formule        = request.data.get("formule")
+
     if not transaction_id:
         return Response({"detail": "transaction_id requis."}, status=400)
+
+    if formule not in PRIX_FORMULES:
+        return Response({"detail": "Formule invalide."}, status=400)
+
+    montant_attendu = PRIX_FORMULES[formule]
     private_key = getattr(settings, "KKIAPAY_PRIVATE_KEY", "")
+
     try:
         res  = requests.get(
             f"https://api.kkiapay.me/api/v1/transactions/{transaction_id}/status",
@@ -73,13 +83,28 @@ def confirmer_paiement(request):
             timeout=10,
         )
         data = res.json()
+
         if data.get("status") != "SUCCESS":
             return Response({"detail": "Paiement non confirmé."}, status=400)
+
+        montant_recu = int(data.get("amount", 0))
+        if montant_recu < montant_attendu:
+            logger.warning(
+                f"Fraude potentielle — user {request.user.email} : "
+                f"montant reçu {montant_recu} FCFA < attendu {montant_attendu} FCFA "
+                f"pour formule {formule} (tx: {transaction_id})"
+            )
+            return Response(
+                {"detail": "Montant du paiement insuffisant."},
+                status=400,
+            )
+
     except Exception as e:
         return Response({"detail": f"Erreur vérification : {str(e)}"}, status=500)
+
     user = request.user
-    user.actif = True
-    if formule in PRIX_FORMULES:
-        user.formule = formule
+    user.actif   = True
+    user.formule = formule
     user.save()
+
     return Response({"detail": "Paiement confirmé. Compte activé.", "formule": formule})

@@ -10,8 +10,7 @@ urlpatterns = [
     # Admin
     path('admin/',                    views.liste_admin),
     path('admin/ajouter/',            views.ajouter),
-    path('admin/<int:pk>/',           views.modifier),
-    path('admin/<int:pk>/modifier/',  views.modifier_complet),
+    path('admin/<int:pk>/',           views.modifier_complet),
     path('admin/<int:pk>/approuver/', views.approuver),
     path('admin/<int:pk>/refuser/',   views.refuser),
     path('admin/<int:pk>/supprimer/', views.supprimer),

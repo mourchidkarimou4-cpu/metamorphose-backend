@@ -13,3 +13,4 @@ fedapay
 cloudinary==1.44.1
 python-decouple==3.8
 reportlab==4.4.10
+django-cloudinary-storage==0.3.0

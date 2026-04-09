@@ -21,3 +21,7 @@ media/
 # OS
 .DS_Store
 Thumbs.db
+
+# Ajouts audit sécurité
+*.swp
+*.swo

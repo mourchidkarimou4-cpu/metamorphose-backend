@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+import cloudinary.models
 
 class DemandeContact(models.Model):
     prenom   = models.CharField(max_length=60)
@@ -17,7 +18,11 @@ class DemandeContact(models.Model):
 
 class Guide(models.Model):
     titre   = models.CharField(max_length=200)
-    fichier = models.FileField(upload_to='guides/')
+    fichier = cloudinary.models.CloudinaryField(
+        'raw', resource_type='raw',
+        folder='metamorphose/guides',
+        blank=True, null=True
+    )
     numero  = models.IntegerField()
     actif   = models.BooleanField(default=True)
 

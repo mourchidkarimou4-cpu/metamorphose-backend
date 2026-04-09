@@ -40,8 +40,17 @@ def stats(request):
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
 def membres_list(request):
-    qs = User.objects.filter(is_staff=False).order_by('-date_joined')
-    return Response(AdminUserSerializer(qs, many=True).data)
+    limit  = min(int(request.query_params.get('limit',  200)), 500)
+    offset = int(request.query_params.get('offset', 0))
+    qs     = User.objects.filter(is_staff=False).order_by('-date_joined')
+    total  = qs.count()
+    page   = qs[offset:offset + limit]
+    return Response({
+        'total':   total,
+        'limit':   limit,
+        'offset':  offset,
+        'results': AdminUserSerializer(page, many=True).data,
+    })
 
 @api_view(['PATCH', 'DELETE'])
 @permission_classes([IsAdminUser])
@@ -166,8 +175,10 @@ def config_public(request):
     """Textes publics du site — accessible sans authentification.
     CORRECTION : filtre les sections sensibles (systeme, prive, admin, interne)
     pour ne pas exposer accidentellement des données internes."""
-    _sections_privees = {'systeme', 'prive', 'admin', 'interne'}
-    qs = SiteConfig.objects.exclude(section__in=_sections_privees).order_by('section')
+    # Filtre insensible à la casse — couvre "Systeme", "système", "ADMIN"…
+    qs = SiteConfig.objects.all().order_by('section')
+    for section in ('systeme', 'prive', 'admin', 'interne'):
+        qs = qs.exclude(section__iexact=section)
     return Response(SiteConfigSerializer(qs, many=True).data)
 
 # ── IMAGE UPLOAD — Cloudinary ──────────────────────────────────
@@ -286,7 +297,7 @@ def export_temoignages_csv(request):
     response.write('\ufeff')
     writer = csv.writer(response)
     writer.writerow(["Prénom","Pays","Formule","Type","Note","Texte","Statut","En vedette","Date"])
-    for t in Temoignage.objects.all().order_by("-date"):
+    for t in Temoignage.objects.all().order_by("-date")[:5000]:
         writer.writerow([t.prenom, t.pays or "", t.formule or "", t.type_temo, t.note, t.texte or "", t.statut, "Oui" if t.en_vedette else "Non", t.date.strftime("%d/%m/%Y %H:%M")])
     return response
 
@@ -299,7 +310,7 @@ def export_attente_csv(request):
     response.write('\ufeff')
     writer = csv.writer(response)
     writer.writerow(["Prénom","Email","Date","Notifiée"])
-    for p in ListeAttente.objects.all():
+    for p in ListeAttente.objects.all()[:5000]:
         writer.writerow([p.prenom or "", p.email, p.date.strftime("%d/%m/%Y %H:%M"), "Oui" if p.notifie else "Non"])
     return response
 
@@ -312,7 +323,7 @@ def export_membres_csv(request):
     response.write('\ufeff')
     writer = csv.writer(response)
     writer.writerow(["Prénom","Nom","Email","WhatsApp","Pays","Formule","Actif","Date inscription"])
-    for u in CustomUser.objects.filter(is_staff=False).order_by("-date_joined"):
+    for u in CustomUser.objects.filter(is_staff=False).order_by("-date_joined")[:5000]:
         writer.writerow([u.first_name, u.last_name, u.email, u.whatsapp or "", u.pays or "", u.formule or "", "Oui" if u.actif else "Non", u.date_joined.strftime("%d/%m/%Y %H:%M")])
     return response
 
@@ -325,10 +336,27 @@ def export_demandes_csv(request):
     response.write('\ufeff')
     writer = csv.writer(response)
     writer.writerow(["Prénom","Nom","Email","WhatsApp","Pays","Formule","Message","Date"])
-    for d in DemandeContact.objects.all().order_by("-date"):
+    for d in DemandeContact.objects.all().order_by("-date")[:5000]:
         writer.writerow([d.prenom or "", d.nom or "", d.email or "", d.whatsapp or "", d.pays or "", d.formule or "", d.message or "", d.date.strftime("%d/%m/%Y %H:%M")])
     return response
 
+
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def export_abonnes_csv(request):
+    from contenu.models import Abonne
+    response = HttpResponse(content_type="text/csv; charset=utf-8")
+    response["Content-Disposition"] = 'attachment; filename="abonnes_newsletter.csv"'
+    response.write('\ufeff')
+    writer = csv.writer(response)
+    writer.writerow(["Email", "Prénom", "Actif", "Date inscription"])
+    for a in Abonne.objects.all().order_by("-created_at")[:5000]:
+        writer.writerow([
+            a.email, a.prenom or "",
+            "Oui" if a.actif else "Non",
+            a.created_at.strftime("%d/%m/%Y %H:%M")
+        ])
+    return response
 
 # ── PARTENAIRES ────────────────────────────────────────────────
 

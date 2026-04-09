@@ -1,6 +1,6 @@
 import logging
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny, IsAdminUser
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from .models import Categorie, Cours
 from .serializers import (
@@ -33,7 +33,7 @@ def cours_list(request):
 
 
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def cours_detail(request, slug):
     try:
         cours = Cours.objects.get(slug=slug, actif=True)

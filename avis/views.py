@@ -50,10 +50,20 @@ def mes_temoignages(request):
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
 def liste_admin(request):
-    statut = request.query_params.get('statut','')
+    statut = request.query_params.get('statut', '')
+    limit  = min(int(request.query_params.get('limit',  100)), 500)
+    offset = int(request.query_params.get('offset', 0))
     qs = Temoignage.objects.all()
-    if statut: qs = qs.filter(statut=statut)
-    return Response(TemoignageAdminSerializer(qs, many=True, context={'request':request}).data)
+    if statut:
+        qs = qs.filter(statut=statut)
+    total = qs.count()
+    page  = qs[offset:offset + limit]
+    return Response({
+        'total':   total,
+        'limit':   limit,
+        'offset':  offset,
+        'results': TemoignageAdminSerializer(page, many=True, context={'request': request}).data,
+    })
 
 def _save_fichiers(t, files):
     """Sauvegarde les fichiers uploadés sur le témoignage"""
@@ -95,12 +105,6 @@ def modifier_complet(request, pk):
         t = _save_fichiers(t, request.FILES)
         return Response(TemoignageAdminSerializer(t, context={'request':request}).data)
     return Response(s.errors, status=400)
-
-@api_view(['PATCH'])
-@permission_classes([IsAdminUser])
-@parser_classes([MultiPartParser, FormParser, JSONParser])
-def modifier(request, pk):
-    return modifier_complet(request, pk)
 
 @api_view(['POST'])
 @permission_classes([IsAdminUser])

@@ -54,6 +54,8 @@ def register(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 @throttle_classes([LoginThrottle])
+# TODO(sécurité) : les tokens JWT sont stockés en localStorage côté React.
+# Pour V2, migrer vers httpOnly cookies (SameSite=Strict) pour éliminer le risque XSS.
 def login(request):
     email    = request.data.get('email', '').strip().lower()
     password = request.data.get('password', '')
@@ -110,15 +112,22 @@ def contact(request):
 @api_view(["PATCH"])
 @permission_classes([IsAuthenticated])
 def update_profile(request):
+    import re
     user      = request.user
     email     = request.data.get("email", user.email).strip().lower()
     firstName = request.data.get("first_name", user.first_name)
     lastName  = request.data.get("last_name", user.last_name)
     whatsapp  = request.data.get("whatsapp", user.whatsapp)
     pays      = request.data.get("pays", user.pays)
+
+    # Validation format email
+    if not re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', email):
+        return Response({"detail": "Format d'email invalide."}, status=400)
+
     from accounts.models import CustomUser
     if CustomUser.objects.exclude(pk=user.pk).filter(email__iexact=email).exists():
         return Response({"detail": "Cet email est déjà utilisé."}, status=400)
+
     user.email      = email
     user.first_name = firstName
     user.last_name  = lastName
@@ -159,7 +168,7 @@ def demander_reset(request):
         token = secrets.token_urlsafe(48)
         PasswordResetToken.objects.filter(user=user, used=False).update(used=True)
         PasswordResetToken.objects.create(user=user, token=token)
-        origin    = request.data.get('origin', 'https://metamorphose.netlify.app')
+        origin    = getattr(settings, 'FRONTEND_URL', 'https://metamorphose.vercel.app')
         reset_url = f"{origin}/reset-password?token={token}"
         send_mail(
             subject="Réinitialisation de votre mot de passe — Méta'Morph'Ose",
@@ -245,9 +254,11 @@ def generer_certificat(request):
         c.setFont("Helvetica", 10)
         c.drawCentredString(w/2, h-155, "Ce certificat est décerné à")
         nom = f"{user.first_name} {user.last_name}".strip() or user.email.split('@')[0]
+        # Adapter la taille de police si le nom est long
+        nom_font_size = 28 if len(nom) <= 22 else (22 if len(nom) <= 30 else 16)
         c.setFillColor(HexColor('#C9A96A'))
-        c.setFont("Helvetica-Bold", 28)
-        c.drawCentredString(w/2, h-200, nom)
+        c.setFont("Helvetica-Bold", nom_font_size)
+        c.drawCentredString(w/2, h-200, nom[:40])  # tronquer à 40 chars max
         c.setStrokeColor(HexColor('#C2185B'))
         c.setLineWidth(1.5)
         c.line(100, h-215, w-100, h-215)
@@ -309,7 +320,7 @@ def _email_bienvenue(user):
             f"Bonjour {user.first_name or user.email},\n\n"
             f"Votre inscription (formule {formule_label}) a bien été reçue.\n\n"
             "Prélia vous contactera sous 24 à 48h.\n\n"
-            "Connectez-vous : https://metamorphose.netlify.app/espace-membre\n\n"
+            f"Connectez-vous : {settings.FRONTEND_URL}/espace-membre\n\n"
             "Prélia Apedo — Méta'Morph'Ose"
         ),
         from_email=settings.DEFAULT_FROM_EMAIL,

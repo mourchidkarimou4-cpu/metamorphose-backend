@@ -23,6 +23,7 @@ urlpatterns = [
     path('export/temoignages/',       views.export_temoignages_csv),
     path('export/attente/',           views.export_attente_csv),
     # Partenaires
+    path('export/abonnes/',           views.export_abonnes_csv),
     path('partenaires/',              views.partenaires_list),
     path('partenaires/<int:pk>/',     views.partenaire_detail),
     path('partenaires/public/',       views.partenaires_public),
