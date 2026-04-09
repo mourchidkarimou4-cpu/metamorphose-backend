@@ -147,7 +147,7 @@ cloudinary.config(
     secure     = True,
 )
 
-FRONTEND_URL = env_config('FRONTEND_URL', default='https://metamorphose.vercel.app')
+FRONTEND_URL = env_config('FRONTEND_URL', default='https://metamorphose-frontend.vercel.app')
 
 # ── FEDAPAY ────────────────────────────────────────────────────
 FEDAPAY_SECRET_KEY     = env_config('FEDAPAY_SECRET_KEY',     default='')
