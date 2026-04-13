@@ -12,6 +12,7 @@ ALLOWED_HOSTS = env_config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split
 
 # ── APPLICATIONS ───────────────────────────────────────────────
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -21,6 +22,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'cloudinary_storage',
     'cloudinary',
+    'channels',
+    'live',
     'rest_framework_simplejwt',
     'corsheaders',
     'accounts',
@@ -127,6 +130,14 @@ TIME_ZONE         = 'Africa/Porto-Novo'
 USE_I18N          = True
 USE_TZ            = True
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# ── CHANNELS (WebSocket) ────────────────────────────────────────
+ASGI_APPLICATION = 'config.asgi.application'
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    }
+}
 
 # ── EMAIL ──────────────────────────────────────────────────────
 EMAIL_BACKEND       = 'django.core.mail.backends.smtp.EmailBackend'
