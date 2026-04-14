@@ -100,3 +100,21 @@ def mes_salles(request):
         'created_at': s.created_at,
         'participants': s.participants.count(),
     } for s in salles])
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def salles_actives(request):
+    """Liste publique des salles en cours ou en attente."""
+    salles = Salle.objects.filter(statut__in=['active', 'attente']).order_by('-created_at')[:20]
+    return Response([{
+        'id': str(s.id),
+        'titre': s.titre,
+        'description': s.description,
+        'mode': s.mode,
+        'statut': s.statut,
+        'hote_nom': s.hote.first_name or s.hote.email,
+        'participants_count': s.participants.filter(quitte_at__isnull=True).count(),
+        'mot_de_passe': bool(s.mot_de_passe),
+        'started_at': s.started_at,
+        'created_at': s.created_at,
+    } for s in salles])

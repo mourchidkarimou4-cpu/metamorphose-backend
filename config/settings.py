@@ -90,8 +90,8 @@ REST_FRAMEWORK = {
         'rest_framework.throttling.UserRateThrottle',
     ],
     'DEFAULT_THROTTLE_RATES': {
-        'anon': '60/hour',
-        'user': '300/hour',
+        'anon': '1000/hour',
+        'user': '3000/hour',
         'agent_ia': '30/hour',
     },
 }
@@ -104,6 +104,7 @@ SIMPLE_JWT = {
 # ── CORS ───────────────────────────────────────────────────────
 _cors_env = env_config('CORS_ALLOWED_ORIGINS', default='http://localhost:5173,http://localhost:3000')
 CORS_ALLOWED_ORIGINS = [o.strip() for o in _cors_env.split(',')]
+CORS_ALLOWED_ORIGINS += ['http://10.32.78.12:5173']
 CORS_ALLOW_CREDENTIALS = True
 
 # ── FICHIERS STATIQUES & MEDIA ─────────────────────────────────
@@ -205,3 +206,5 @@ LOGGING = {
         'paiement':       {'handlers': ['console'], 'level': 'INFO', 'propagate': False},
     },
 }
+
+
