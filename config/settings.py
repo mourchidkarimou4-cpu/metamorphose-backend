@@ -24,6 +24,8 @@ INSTALLED_APPS = [
     'cloudinary',
     'channels',
     'live',
+    'evenements',
+    'communaute',
     'rest_framework_simplejwt',
     'corsheaders',
     'accounts',
