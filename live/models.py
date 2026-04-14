@@ -46,3 +46,15 @@ class Message(models.Model):
 
     class Meta:
         ordering = ['created_at']
+
+class PeerActif(models.Model):
+    salle    = models.ForeignKey(Salle, on_delete=models.CASCADE, related_name='peers_actifs')
+    peer_id  = models.CharField(max_length=100, unique=True)
+    nom      = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"{self.nom} ({self.peer_id})"
