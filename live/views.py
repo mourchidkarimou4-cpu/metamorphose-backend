@@ -118,3 +118,43 @@ def salles_actives(request):
         'started_at': s.started_at,
         'created_at': s.created_at,
     } for s in salles])
+
+# ── Registre PeerJS (remplace WebSocket pour le signaling) ──────
+
+from django.core.cache import cache
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def register_peer(request, room_id):
+    """Enregistrer un peer_id dans la salle."""
+    peer_id = request.data.get('peer_id')
+    nom = request.data.get('nom', 'Anonyme')
+    if not peer_id:
+        return Response({'detail': 'peer_id requis.'}, status=400)
+    key = f'live_peers_{room_id}'
+    peers = cache.get(key, [])
+    peers = [p for p in peers if p['peer_id'] != peer_id]
+    peers.append({'peer_id': peer_id, 'nom': nom})
+    cache.set(key, peers, timeout=3600)
+    return Response({'ok': True})
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def list_peers(request, room_id):
+    """Lister les peers actifs dans une salle."""
+    key = f'live_peers_{room_id}'
+    peers = cache.get(key, [])
+    return Response({'peers': peers})
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def leave_peer(request, room_id):
+    """Retirer un peer de la salle."""
+    peer_id = request.data.get('peer_id')
+    if not peer_id:
+        return Response({'detail': 'peer_id requis.'}, status=400)
+    key = f'live_peers_{room_id}'
+    peers = cache.get(key, [])
+    peers = [p for p in peers if p['peer_id'] != peer_id]
+    cache.set(key, peers, timeout=3600)
+    return Response({'ok': True})
