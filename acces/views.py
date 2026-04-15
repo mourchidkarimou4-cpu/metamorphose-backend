@@ -36,7 +36,7 @@ class VerifierCleView(APIView):
 
 class ListeClesAdminView(APIView):
     """
-    Endpoint admin — Liste toutes les clés (Coach AHONON uniquement).
+    Endpoint admin — Liste toutes les clés (Coach Prélia APEDO AHONON uniquement).
     GET /api/acces/admin/cles/
     """
     permission_classes = [IsAdminUser]
@@ -54,7 +54,7 @@ class ListeClesAdminView(APIView):
 
 class GenererCleAdminView(APIView):
     """
-    Endpoint admin — Génère une clé pour un email donné (Coach AHONON uniquement).
+    Endpoint admin — Génère une clé pour un email donné (Coach Prélia APEDO AHONON uniquement).
     POST /api/acces/admin/generer/
     Body : { "email": "..." }
     """
@@ -85,7 +85,7 @@ class GenererCleAdminView(APIView):
 
 class ToggleCleAdminView(APIView):
     """
-    Endpoint admin — Active ou révoque une clé (Coach AHONON uniquement).
+    Endpoint admin — Active ou révoque une clé (Coach Prélia APEDO AHONON uniquement).
     PATCH /api/acces/admin/cles/<pk>/toggle/
     """
     permission_classes = [IsAdminUser]

@@ -79,12 +79,12 @@ def verifier_acces(request, slug):
 @permission_classes([IsAdminUser])
 def admin_activer_acces(request):
     """
-    Activation manuelle par Coach AHONON.
+    Activation manuelle par Coach Prélia APEDO AHONON.
     Body : { "email": "...", "cours_id": 1, "notes": "..." }
     """
     email    = request.data.get('email', '').strip()
     cours_id = request.data.get('cours_id')
-    notes    = request.data.get('notes', 'Activation manuelle — Coach AHONON')
+    notes    = request.data.get('notes', 'Activation manuelle — Coach Prélia APEDO AHONON')
 
     try:
         user = User.objects.get(email=email)
@@ -109,7 +109,7 @@ def admin_activer_acces(request):
 @permission_classes([IsAdminUser])
 def admin_desactiver_acces(request):
     """
-    Désactivation manuelle par Coach AHONON.
+    Désactivation manuelle par Coach Prélia APEDO AHONON.
     Body : { "email": "...", "cours_id": 1 }
     """
     email    = request.data.get('email', '').strip()
@@ -128,7 +128,7 @@ def admin_desactiver_acces(request):
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
 def admin_liste_acces(request):
-    """Liste tous les accès — tableau de bord Coach AHONON."""
+    """Liste tous les accès — tableau de bord Coach Prélia APEDO AHONON."""
     acces = AccesCours.objects.select_related('user', 'cours').all()
     cours_id = request.query_params.get('cours_id')
     if cours_id:

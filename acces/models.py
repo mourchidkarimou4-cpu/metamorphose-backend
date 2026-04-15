@@ -4,7 +4,7 @@ from django.utils.crypto import get_random_string
 class CleAcces(models.Model):
     """
     Clé d'accès à la Communauté MMO.
-    Générée par Coach AHONON pour chaque Métamorphosée ayant terminé le programme.
+    Générée par Coach Prélia APEDO AHONON pour chaque Métamorphosée ayant terminé le programme.
     """
     email      = models.EmailField(unique=True, verbose_name="Email de la Métamorphosée")
     cle        = models.CharField(max_length=12, unique=True, verbose_name="Clé d'accès")

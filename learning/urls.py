@@ -11,7 +11,7 @@ urlpatterns = [
     path('mes-cours/',                views.mes_cours),
     path('<slug:slug>/acces/',        views.verifier_acces),
 
-    # Admin — Coach AHONON
+    # Admin — Coach Prélia APEDO AHONON
     path('admin/acces/',              views.admin_liste_acces),
     path('admin/acces/activer/',      views.admin_activer_acces),
     path('admin/acces/desactiver/',   views.admin_desactiver_acces),

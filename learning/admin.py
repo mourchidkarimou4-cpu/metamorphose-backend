@@ -37,7 +37,7 @@ class AccesCoursAdmin(admin.ModelAdmin):
 
     def activer_acces(self, request, queryset):
         queryset.update(actif=True)
-        self.message_user(request, f"{queryset.count()} acces actives par Coach AHONON.")
+        self.message_user(request, f"{queryset.count()} acces actives par Coach Prélia APEDO AHONON.")
     activer_acces.short_description = "Activer les acces selectionnes"
 
     def desactiver_acces(self, request, queryset):
