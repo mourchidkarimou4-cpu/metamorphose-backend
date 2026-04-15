@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     'live',
     'evenements',
     'communaute',
+    'acces',
     'rest_framework_simplejwt',
     'corsheaders',
     'accounts',
