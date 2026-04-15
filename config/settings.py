@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'evenements',
     'communaute',
     'acces',
+    'masterclass',
     'rest_framework_simplejwt',
     'corsheaders',
     'accounts',
