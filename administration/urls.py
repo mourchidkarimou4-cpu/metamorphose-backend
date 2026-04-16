@@ -24,7 +24,8 @@ urlpatterns = [
     path('export/attente/',           views.export_attente_csv),
     # Partenaires
     path('export/abonnes/',           views.export_abonnes_csv),
+    path('partenaires/public/',       views.partenaires_public),
     path('partenaires/',              views.partenaires_list),
     path('partenaires/<int:pk>/',     views.partenaire_detail),
-    path('partenaires/public/',       views.partenaires_public),
+    path('partenaires/<int:pk>/logo/',views.partenaire_logo_upload),
 ]

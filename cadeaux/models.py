@@ -1,6 +1,8 @@
-from django.db import models
-import uuid
-import string, random
+import secrets, string
+
+def gen_code():
+    chars = string.ascii_uppercase + string.digits
+    return "MMO-" + "".join(secrets.choice(chars) for _ in range(8))
 
 def gen_code():
     chars = string.ascii_uppercase + string.digits
