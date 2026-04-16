@@ -18,7 +18,6 @@ django-cloudinary-storage==0.3.0
 django-cors-headers==4.9.0
 djangorestframework==3.17.1
 djangorestframework_simplejwt==5.5.1
-fedapay==0.3.0
 gunicorn==25.3.0
 hyperlink==21.0.0
 idna==3.11

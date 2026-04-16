@@ -167,17 +167,6 @@ cloudinary.config(
 
 FRONTEND_URL = env_config('FRONTEND_URL', default='https://metamorphose-frontend.vercel.app')
 
-# ── FEDAPAY ────────────────────────────────────────────────────
-FEDAPAY_SECRET_KEY     = env_config('FEDAPAY_SECRET_KEY',     default='')
-FEDAPAY_WEBHOOK_SECRET = env_config('FEDAPAY_WEBHOOK_SECRET', default='')
-FEDAPAY_ENV            = env_config('FEDAPAY_ENV',            default='sandbox')
-
-# ── KKIAPAY ────────────────────────────────────────────────────
-KKIAPAY_PUBLIC_KEY  = env_config('KKIAPAY_PUBLIC_KEY',  default='')
-KKIAPAY_PRIVATE_KEY = env_config('KKIAPAY_PRIVATE_KEY', default='')
-KKIAPAY_SECRET_KEY  = env_config('KKIAPAY_SECRET_KEY',  default='')
-KKIAPAY_SANDBOX     = env_config('KKIAPAY_SANDBOX',     default='True', cast=bool)
-
 
 # ── LOGGING ────────────────────────────────────────────────────
 LOGGING = {

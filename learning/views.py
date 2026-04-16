@@ -157,11 +157,16 @@ def webhook_paiement(request):
     Body attendu : { "email": "...", "cours_id": 1, "transaction_id": "...", "montant": 5000, "signature": "..." }
     """
     import os
-    WEBHOOK_SECRET = os.environ.get('WEBHOOK_SECRET', 'metamorphose_secret_2026')
+    WEBHOOK_SECRET = os.environ.get('WEBHOOK_SECRET', '')
+    if not WEBHOOK_SECRET:
+        return Response({'detail': 'Webhook non configuré.'}, status=500)
 
     # Vérification signature HMAC
-    signature_recue  = request.headers.get('X-Webhook-Signature', '')
-    payload_bytes    = request.body
+    signature_recue    = request.headers.get('X-Webhook-Signature', '')
+    if not signature_recue:
+        return Response({'detail': 'Signature manquante.'}, status=400)
+
+    payload_bytes      = request.body
     signature_calculee = hmac.new(
         WEBHOOK_SECRET.encode(),
         payload_bytes,
