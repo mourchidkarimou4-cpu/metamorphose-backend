@@ -25,6 +25,8 @@ def cours_data(c, user=None):
         'duree':       c.duree,
         'niveau':      c.niveau,
         'image':       c.image,
+        'prix':        c.prix,
+        'lien_achat':  c.lien_achat,
         'en_vedette':  c.en_vedette,
         'a_acces':     a_acces,
         # Contenu protégé — uniquement si accès
@@ -211,3 +213,105 @@ def webhook_paiement(request):
 def liste_categories(request):
     cats = Categorie.objects.all()
     return Response([{'id': c.id, 'nom': c.nom, 'slug': c.slug, 'couleur': c.couleur} for c in cats])
+
+# ── ADMIN CRUD COURS & CATÉGORIES ────────────────────────────────
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def admin_cours(request):
+    if not request.user.is_staff:
+        return Response({'detail': 'Accès refusé.'}, status=403)
+    if request.method == 'GET':
+        cours = Cours.objects.select_related('categorie').all()
+        return Response([cours_data(c, request.user) for c in cours])
+    # POST
+    data = request.data
+    try:
+        c = Cours.objects.create(
+            titre=data['titre'], slug=data['slug'],
+            description=data.get('description',''),
+            format=data.get('format','texte'),
+            contenu=data.get('contenu',''),
+            video_url=data.get('video_url',''),
+            audio_url=data.get('audio_url',''),
+            pdf_url=data.get('pdf_url',''),
+            duree=data.get('duree',''),
+            niveau=data.get('niveau','debutant'),
+            image=data.get('image',''),
+            semaine=data.get('semaine') or None,
+            actif=data.get('actif', True),
+            en_vedette=data.get('en_vedette', False),
+            ordre=data.get('ordre', 0),
+            prix=data.get('prix', 0),
+            lien_achat=data.get('lien_achat',''),
+            categorie_id=data.get('categorie') or None,
+        )
+        return Response(cours_data(c, request.user), status=201)
+    except Exception as e:
+        return Response({'detail': str(e)}, status=400)
+
+@api_view(['GET', 'PATCH', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def admin_cours_detail(request, pk):
+    if not request.user.is_staff:
+        return Response({'detail': 'Accès refusé.'}, status=403)
+    try:
+        c = Cours.objects.get(pk=pk)
+    except Cours.DoesNotExist:
+        return Response({'detail': 'Cours introuvable.'}, status=404)
+    if request.method == 'GET':
+        return Response(cours_data(c, request.user))
+    if request.method == 'DELETE':
+        c.delete()
+        return Response(status=204)
+    # PATCH
+    data = request.data
+    for field in ['titre','slug','description','format','contenu','video_url','audio_url','pdf_url','duree','niveau','image','actif','en_vedette','ordre','prix','lien_achat']:
+        if field in data:
+            setattr(c, field, data[field])
+    if 'semaine' in data:
+        c.semaine = data['semaine'] or None
+    if 'categorie' in data:
+        c.categorie_id = data['categorie'] or None
+    c.save()
+    return Response(cours_data(c, request.user))
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def admin_categories(request):
+    if not request.user.is_staff:
+        return Response({'detail': 'Accès refusé.'}, status=403)
+    if request.method == 'GET':
+        from django.forms.models import model_to_dict
+        cats = Categorie.objects.all()
+        return Response([{'id':c.id,'nom':c.nom,'slug':c.slug,'icone':c.icone,'couleur':c.couleur,'ordre':c.ordre} for c in cats])
+    data = request.data
+    try:
+        cat = Categorie.objects.create(
+            nom=data['nom'], slug=data['slug'],
+            icone=data.get('icone','✦'),
+            couleur=data.get('couleur','#C9A96A'),
+            ordre=data.get('ordre',0),
+        )
+        return Response({'id':cat.id,'nom':cat.nom,'slug':cat.slug,'icone':cat.icone,'couleur':cat.couleur,'ordre':cat.ordre}, status=201)
+    except Exception as e:
+        return Response({'detail': str(e)}, status=400)
+
+@api_view(['PATCH', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def admin_categorie_detail(request, pk):
+    if not request.user.is_staff:
+        return Response({'detail': 'Accès refusé.'}, status=403)
+    try:
+        cat = Categorie.objects.get(pk=pk)
+    except Categorie.DoesNotExist:
+        return Response({'detail': 'Catégorie introuvable.'}, status=404)
+    if request.method == 'DELETE':
+        cat.delete()
+        return Response(status=204)
+    data = request.data
+    for field in ['nom','slug','icone','couleur','ordre']:
+        if field in data:
+            setattr(cat, field, data[field])
+    cat.save()
+    return Response({'id':cat.id,'nom':cat.nom,'slug':cat.slug,'icone':cat.icone,'couleur':cat.couleur,'ordre':cat.ordre})

@@ -45,6 +45,8 @@ class Cours(models.Model):
     image       = models.CharField(max_length=500, blank=True)
     actif       = models.BooleanField(default=True)
     en_vedette  = models.BooleanField(default=False)
+    prix        = models.PositiveIntegerField(default=0, help_text='Prix en FCFA — 0 = gratuit')
+    lien_achat  = models.URLField(blank=True, help_text='Lien de paiement externe fourni par Coach Prélia APEDO AHONON')
     ordre       = models.PositiveIntegerField(default=0)
     created_at  = models.DateTimeField(auto_now_add=True)
 
