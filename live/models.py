@@ -8,7 +8,7 @@ class Salle(models.Model):
     titre       = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     hote        = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='salles_hote')
-    mot_de_passe= models.CharField(max_length=50, blank=True)
+    code_acces  = models.CharField(max_length=10, blank=True, help_text='Code généré automatiquement à la création')
     statut      = models.CharField(max_length=20, choices=STATUT, default='attente')
     max_participants = models.IntegerField(default=1000)
     mode        = models.CharField(max_length=20, default='reunion', choices=[

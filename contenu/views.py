@@ -72,3 +72,41 @@ def se_desabonner(request):
     if email:
         Abonne.objects.filter(email=email).update(actif=False)
     return Response({'detail': 'Vous avez été désabonné(e).'})
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def acceder_replay(request, replay_id):
+    """Accès à un replay via email + code."""
+    from .models import Replay
+    email = request.data.get('email', '').strip()
+    code  = request.data.get('code', '').strip().upper()
+    if not email or not code:
+        return Response({'detail': 'Email et code requis.'}, status=400)
+    try:
+        replay = Replay.objects.get(id=replay_id, actif=True)
+    except Replay.DoesNotExist:
+        return Response({'detail': 'Replay introuvable.'}, status=404)
+    if not replay.code_acces or replay.code_acces.upper() != code:
+        return Response({'detail': 'Code incorrect.'}, status=403)
+    from .serializers import ReplaySerializer
+    return Response({
+        'acces': True,
+        'replay': ReplaySerializer(replay).data,
+        'email': email,
+    })
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def infos_replay_public(request, replay_id):
+    """Infos publiques d'un replay (titre, sans contenu)."""
+    from .models import Replay
+    try:
+        replay = Replay.objects.get(id=replay_id, actif=True)
+    except Replay.DoesNotExist:
+        return Response({'detail': 'Replay introuvable.'}, status=404)
+    return Response({
+        'id': replay.id,
+        'titre': replay.titre,
+        'semaine': replay.semaine,
+        'a_code': bool(replay.code_acces),
+    })

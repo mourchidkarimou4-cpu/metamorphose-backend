@@ -12,15 +12,17 @@ def creer_salle(request):
         titre=request.data.get('titre', 'Ma réunion'),
         description=request.data.get('description', ''),
         hote=request.user,
-        mot_de_passe=request.data.get('mot_de_passe', ''),
-        mode=request.data.get('mode', 'reunion'),
+        code_acces=generer_code(),
+        mode=request.data.get('mode', 'live'),
         max_participants=request.data.get('max_participants', 1000),
     )
+    lien = f"{request.data.get('frontend_url', '')}/live/{str(salle.id)}"
     return Response({
         'id': str(salle.id),
         'titre': salle.titre,
         'mode': salle.mode,
-        'mot_de_passe': salle.mot_de_passe,
+        'code_acces': salle.code_acces,
+        'lien': lien,
         'statut': salle.statut,
         'created_at': salle.created_at,
     }, status=201)
@@ -155,3 +157,33 @@ def leave_peer(request, room_id):
         return Response({'detail': 'peer_id requis.'}, status=400)
     PeerActif.objects.filter(peer_id=peer_id).delete()
     return Response({'ok': True})
+
+import random, string
+
+def generer_code():
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def rejoindre_live_public(request, room_id):
+    """Accès public au live via email + code."""
+    email = request.data.get('email', '').strip()
+    code  = request.data.get('code', '').strip().upper()
+    if not email or not code:
+        return Response({'detail': 'Email et code requis.'}, status=400)
+    try:
+        salle = Salle.objects.get(id=room_id, statut='active')
+    except Salle.DoesNotExist:
+        return Response({'detail': 'Live introuvable ou terminé.'}, status=404)
+    if salle.code_acces and salle.code_acces.upper() != code:
+        return Response({'detail': 'Code incorrect.'}, status=403)
+    # Enregistrer le participant
+    Participant.objects.get_or_create(
+        salle=salle, nom=email,
+        defaults={'role': 'spectateur'}
+    )
+    return Response({
+        'room_id': str(salle.id),
+        'titre':   salle.titre,
+        'email':   email,
+    })

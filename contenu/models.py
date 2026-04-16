@@ -35,6 +35,7 @@ class Replay(models.Model):
     semaine  = models.IntegerField()
     formules = models.CharField(max_length=20, default='F1,F2,F3,F4')
     actif    = models.BooleanField(default=True)
+    code_acces = models.CharField(max_length=10, blank=True)
 
     def __str__(self):
         return f"S{self.semaine} — {self.titre}"
