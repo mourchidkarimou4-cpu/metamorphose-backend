@@ -140,11 +140,24 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ── CHANNELS (WebSocket) ────────────────────────────────────────
 ASGI_APPLICATION = 'config.asgi.application'
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+REDIS_URL = env_config('REDIS_URL', default='')
+if REDIS_URL:
+    # Production multi-workers — Redis requis si REDIS_URL est défini
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                'hosts': [REDIS_URL],
+            },
+        }
     }
-}
+else:
+    # Développement / plan gratuit Render (1 seul worker)
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        }
+    }
 
 # ── EMAIL ──────────────────────────────────────────────────────
 EMAIL_BACKEND       = 'django.core.mail.backends.smtp.EmailBackend'
