@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     'accounts',
     'contenu',
     'administration',
+    'notifications',
     'cadeaux',
     'avis',
     'paiement',

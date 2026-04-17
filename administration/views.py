@@ -21,19 +21,80 @@ User = get_user_model()
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
 def stats(request):
+    from datetime import date, timedelta
+    from django.db.models import Count
+    from django.db.models.functions import TruncMonth, TruncWeek
+
+    aujourd_hui = date.today()
+    il_y_a_30j  = aujourd_hui - timedelta(days=30)
+    il_y_a_7j   = aujourd_hui - timedelta(days=7)
+
+    # ── Membres ───────────────────────────────────────────────────
+    membres_qs = User.objects.filter(is_staff=False)
+    total_membres   = membres_qs.count()
+    membres_actifs  = membres_qs.filter(actif=True).count()
+    nouveaux_7j     = membres_qs.filter(date_joined__date__gte=il_y_a_7j).count()
+    nouveaux_30j    = membres_qs.filter(date_joined__date__gte=il_y_a_30j).count()
+
+    # ── Inscriptions par mois (12 derniers mois) ─────────────────
+    inscriptions_mois = list(
+        membres_qs
+        .filter(date_joined__date__gte=aujourd_hui - timedelta(days=365))
+        .annotate(mois=TruncMonth('date_joined'))
+        .values('mois')
+        .annotate(total=Count('id'))
+        .order_by('mois')
+        .values('mois', 'total')
+    )
+
+    # ── Répartition formules & revenus estimés ───────────────────
+    PRIX_FORMULES = {'F1': 65000, 'F2': 150000, 'F3': 250000, 'F4': 350000}
+    formules = {}
+    revenu_estime = 0
+    for code, prix in PRIX_FORMULES.items():
+        count = membres_qs.filter(formule=code, actif=True).count()
+        formules[code] = count
+        revenu_estime += count * prix
+
+    # ── Taux de conversion demandes → membres ─────────────────────
+    total_demandes  = DemandeContact.objects.count()
+    taux_conversion = round((membres_actifs / total_demandes * 100), 1) if total_demandes > 0 else 0
+
+    # ── Demandes récentes ─────────────────────────────────────────
+    demandes_7j = DemandeContact.objects.filter(
+        created_at__date__gte=il_y_a_7j
+    ).count() if hasattr(DemandeContact, 'created_at') else 0
+
     return Response({
-        'membres':     User.objects.filter(is_staff=False).count(),
-        'actifs':      User.objects.filter(actif=True).count(),
-        'demandes':    DemandeContact.objects.count(),
-        'non_traites': DemandeContact.objects.filter(traite=False).count(),
-        'replays':     Replay.objects.count(),
-        'guides':      Guide.objects.count(),
-        'formules': {
-            'F1': User.objects.filter(formule='F1').count(),
-            'F2': User.objects.filter(formule='F2').count(),
-            'F3': User.objects.filter(formule='F3').count(),
-            'F4': User.objects.filter(formule='F4').count(),
-        }
+        # Métriques principales
+        'membres':          total_membres,
+        'actifs':           membres_actifs,
+        'taux_activation':  round(membres_actifs / total_membres * 100, 1) if total_membres > 0 else 0,
+        'nouveaux_7j':      nouveaux_7j,
+        'nouveaux_30j':     nouveaux_30j,
+
+        # Demandes
+        'demandes':         total_demandes,
+        'non_traites':      DemandeContact.objects.filter(traite=False).count(),
+        'demandes_7j':      demandes_7j,
+        'taux_conversion':  taux_conversion,
+
+        # Contenu
+        'replays':          Replay.objects.count(),
+        'guides':           Guide.objects.count(),
+
+        # Formules et revenus
+        'formules':         formules,
+        'revenu_estime':    revenu_estime,
+
+        # Tendance inscriptions
+        'inscriptions_mois': [
+            {
+                'mois':  item['mois'].strftime('%b %Y') if item['mois'] else '',
+                'total': item['total']
+            }
+            for item in inscriptions_mois
+        ],
     })
 
 # ── MEMBRES ────────────────────────────────────────────────────

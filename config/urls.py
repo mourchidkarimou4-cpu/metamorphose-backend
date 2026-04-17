@@ -18,6 +18,7 @@ urlpatterns = [
     path('api/cadeaux/', include('cadeaux.urls')),
     path('api/avis/', include('avis.urls')),
     path('api/paiement/', include('paiement.urls')),
+    path('api/', include('notifications.urls')),
     path('api/learning/', include('learning.urls')),
     path('api/tickets/', include('tickets.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
