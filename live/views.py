@@ -42,7 +42,7 @@ def infos_salle(request, room_id):
         'hote': salle.hote.first_name or salle.hote.email,
         'participants': salle.participants.filter(quitte_at__isnull=True).count(),
         'max_participants': salle.max_participants,
-        'protege': bool(salle.mot_de_passe),
+        'protege': bool(salle.code_acces),
     })
 
 @api_view(['POST'])
@@ -53,7 +53,7 @@ def rejoindre_salle(request, room_id):
     except Salle.DoesNotExist:
         return Response({'detail': 'Salle introuvable.'}, status=404)
 
-    if salle.mot_de_passe and request.data.get('mot_de_passe') != salle.mot_de_passe:
+    if salle.code_acces and request.data.get('code_acces', '').strip().upper() != salle.code_acces.upper():
         return Response({'detail': 'Mot de passe incorrect.'}, status=403)
 
     if salle.statut == 'terminee':
@@ -116,7 +116,7 @@ def salles_actives(request):
         'statut': s.statut,
         'hote_nom': s.hote.first_name or s.hote.email,
         'participants_count': s.participants.filter(quitte_at__isnull=True).count(),
-        'mot_de_passe': bool(s.mot_de_passe),
+        'protege': bool(s.code_acces),
         'started_at': s.started_at,
         'created_at': s.created_at,
     } for s in salles])

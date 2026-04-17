@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+
 urlpatterns = [
     path('stats/',                    views.stats),
     path('membres/',                  views.membres_list),
@@ -22,10 +23,10 @@ urlpatterns = [
     path('export/demandes/',          views.export_demandes_csv),
     path('export/temoignages/',       views.export_temoignages_csv),
     path('export/attente/',           views.export_attente_csv),
-    # Partenaires
     path('export/abonnes/',           views.export_abonnes_csv),
+    # Partenaires — public/ DOIT être avant <int:pk>/
     path('partenaires/public/',       views.partenaires_public),
     path('partenaires/',              views.partenaires_list),
     path('partenaires/<int:pk>/',     views.partenaire_detail),
-    path('partenaires/<int:pk>/logo/',views.partenaire_logo_upload),
+    path('partenaires/logo/',         views.partenaire_logo_upload),
 ]
