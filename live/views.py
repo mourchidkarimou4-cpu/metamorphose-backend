@@ -266,7 +266,7 @@ def daily_token(request, room_id):
         )
         if resp.status_code in [200, 201]:
             token = resp.json().get('token', '')
-            room_url = f"https://metamorphose.daily.co/{salle.daily_room_name or str(salle.id).replace('-', '')}"
+            room_url = f"https://masterclass-ose-live.daily.co/{salle.daily_room_name or str(salle.id).replace('-', '')}"
             return Response({
                 'token': token,
                 'room_url': room_url,
