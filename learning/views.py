@@ -11,10 +11,13 @@ import hashlib, hmac, json
 
 User = get_user_model()
 
-def cours_data(c, user=None):
+def cours_data(c, user=None, acces_ids=None):
     a_acces = False
     if user and user.is_authenticated:
-        a_acces = AccesCours.objects.filter(user=user, cours=c, actif=True).exists()
+        if acces_ids is not None:
+            a_acces = c.id in acces_ids
+        else:
+            a_acces = AccesCours.objects.filter(user=user, cours=c, actif=True).exists()
     return {
         'id':          c.id,
         'titre':       c.titre,
@@ -40,12 +43,18 @@ def cours_data(c, user=None):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def liste_cours(request):
-    cours = Cours.objects.filter(actif=True)
+    cours = Cours.objects.filter(actif=True).select_related('categorie')
     cat   = request.query_params.get('categorie')
     if cat:
         cours = cours.filter(categorie__slug=cat)
     user = request.user if request.user.is_authenticated else None
-    return Response([cours_data(c, user) for c in cours])
+    acces_ids = None
+    if user and user.is_authenticated:
+        acces_ids = set(
+            AccesCours.objects.filter(user=user, actif=True)
+                              .values_list('cours_id', flat=True)
+        )
+    return Response([cours_data(c, user, acces_ids) for c in cours])
 
 # ── DETAIL COURS ─────────────────────────────────────────────────
 @api_view(['GET'])
