@@ -8,11 +8,12 @@ import uuid
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def creer_salle(request):
+    code = request.data.get('mot_de_passe', '').strip() or request.data.get('code_acces', '').strip()
     salle = Salle.objects.create(
         titre=request.data.get('titre', 'Ma réunion'),
         description=request.data.get('description', ''),
         hote=request.user,
-        code_acces=generer_code(),
+        code_acces=code.upper() if code else '',
         mode=request.data.get('mode', 'live'),
         max_participants=request.data.get('max_participants', 1000),
     )
