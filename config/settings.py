@@ -111,12 +111,6 @@ _cors_env = env_config('CORS_ALLOWED_ORIGINS', default='http://localhost:5173,ht
 CORS_ALLOWED_ORIGINS = [o.strip() for o in _cors_env.split(',')]
 CORS_ALLOWED_ORIGINS += ['http://10.32.78.12:5173']
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_HEADERS = [
-    'accept', 'accept-encoding', 'authorization',
-    'content-type', 'dnt', 'origin', 'user-agent',
-    'x-csrftoken', 'x-requested-with',
-]
-CORS_ALLOW_METHODS = ['DELETE', 'GET', 'OPTIONS', 'PATCH', 'POST', 'PUT']
 
 # ── FICHIERS STATIQUES & MEDIA ─────────────────────────────────
 STATIC_URL  = '/static/'
@@ -172,6 +166,7 @@ EMAIL_HOST          = 'smtp.gmail.com'
 EMAIL_PORT          = 587
 EMAIL_USE_TLS       = True
 EMAIL_HOST_USER     = env_config('EMAIL_HOST_USER', default='')
+DAILY_API_KEY       = env_config('DAILY_API_KEY', default='')
 EMAIL_HOST_PASSWORD = env_config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL  = env_config('DEFAULT_FROM_EMAIL', default='Méta\'Morph\'Ose <contact@metamorphose.com>')
 ADMIN_EMAIL         = env_config('EMAIL_HOST_USER', default='')

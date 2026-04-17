@@ -15,6 +15,7 @@ class Salle(models.Model):
         ('reunion','Réunion'),('webinaire','Webinaire'),('live','Live')
     ])
     enregistrement_actif = models.BooleanField(default=False)
+    daily_room_name = models.CharField(max_length=200, blank=True)
     created_at  = models.DateTimeField(auto_now_add=True)
     started_at  = models.DateTimeField(null=True, blank=True)
     ended_at    = models.DateTimeField(null=True, blank=True)

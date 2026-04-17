@@ -1,9 +1,11 @@
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from rest_framework.response import Response
 from django.utils import timezone
+from django.conf import settings
 from .models import Salle, Participant, Message
 import uuid
+import requests as http_requests
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -17,7 +19,41 @@ def creer_salle(request):
         mode=request.data.get('mode', 'live'),
         max_participants=request.data.get('max_participants', 1000),
     )
-    lien = f"{request.data.get('frontend_url', '')}/live/{str(salle.id)}"
+
+    # Créer la room Daily.co
+    daily_api_key = getattr(settings, 'DAILY_API_KEY', '')
+    daily_room_name = ''
+    if daily_api_key:
+        try:
+            resp = http_requests.post(
+                'https://api.daily.co/v1/rooms',
+                headers={
+                    'Authorization': f'Bearer {daily_api_key}',
+                    'Content-Type': 'application/json',
+                },
+                json={
+                    'name': str(salle.id).replace('-', ''),
+                    'properties': {
+                        'max_participants': salle.max_participants,
+                        'enable_chat': True,
+                        'enable_screenshare': True,
+                        'enable_recording': 'cloud',
+                        'start_video_off': False,
+                        'start_audio_off': False,
+                        'exp': int(timezone.now().timestamp()) + 86400,
+                    }
+                },
+                timeout=10
+            )
+            if resp.status_code in [200, 201]:
+                daily_room_name = resp.json().get('name', '')
+                salle.daily_room_name = daily_room_name
+                salle.save()
+        except Exception:
+            pass
+
+    frontend_url = getattr(settings, 'FRONTEND_URL', 'https://metamorphose-frontend.vercel.app')
+    lien = f"{frontend_url}/meeting/{str(salle.id)}"
     return Response({
         'id': str(salle.id),
         'titre': salle.titre,
@@ -25,6 +61,7 @@ def creer_salle(request):
         'code_acces': salle.code_acces,
         'lien': lien,
         'statut': salle.statut,
+        'daily_room_name': daily_room_name,
         'created_at': salle.created_at,
     }, status=201)
 
@@ -188,3 +225,54 @@ def rejoindre_live_public(request, room_id):
         'titre':   salle.titre,
         'email':   email,
     })
+
+
+# ── Daily.co — Générer token de meeting ───────────────────────────
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def daily_token(request, room_id):
+    """Génère un token Daily.co pour rejoindre une salle."""
+    try:
+        salle = Salle.objects.get(id=room_id)
+    except Salle.DoesNotExist:
+        return Response({'detail': 'Salle introuvable.'}, status=404)
+
+    daily_api_key = getattr(settings, 'DAILY_API_KEY', '')
+    if not daily_api_key:
+        return Response({'detail': 'Daily.co non configuré.'}, status=500)
+
+    is_owner = salle.hote == request.user
+    is_admin = request.user.is_staff
+
+    try:
+        resp = http_requests.post(
+            'https://api.daily.co/v1/meeting-tokens',
+            headers={
+                'Authorization': f'Bearer {daily_api_key}',
+                'Content-Type': 'application/json',
+            },
+            json={
+                'properties': {
+                    'room_name': salle.daily_room_name or str(salle.id).replace('-', ''),
+                    'user_name': request.user.first_name or request.user.email,
+                    'is_owner': is_owner or is_admin,
+                    'enable_recording': is_owner or is_admin,
+                    'start_video_off': False,
+                    'start_audio_off': False,
+                    'exp': int(timezone.now().timestamp()) + 7200,  # 2h
+                }
+            },
+            timeout=10
+        )
+        if resp.status_code in [200, 201]:
+            token = resp.json().get('token', '')
+            room_url = f"https://metamorphose.daily.co/{salle.daily_room_name or str(salle.id).replace('-', '')}"
+            return Response({
+                'token': token,
+                'room_url': room_url,
+                'room_name': salle.daily_room_name,
+                'is_owner': is_owner or is_admin,
+            })
+        return Response({'detail': 'Erreur Daily.co', 'status': resp.status_code}, status=500)
+    except Exception as e:
+        return Response({'detail': str(e)}, status=500)
