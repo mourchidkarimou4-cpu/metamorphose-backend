@@ -34,7 +34,6 @@ def creer_salle(request):
                 json={
                     'name': str(salle.id).replace('-', ''),
                     'properties': {
-                        'max_participants': salle.max_participants,
                         'enable_chat': True,
                         'enable_screenshare': True,
                         'enable_recording': 'cloud',
@@ -258,10 +257,8 @@ def daily_token(request, room_id):
                 json={
                     'name': room_name,
                     'properties': {
-                        'max_participants': salle.max_participants,
                         'enable_chat': True,
                         'enable_screenshare': True,
-                        'enable_recording': 'cloud',
                         'exp': int(timezone.now().timestamp()) + 86400,
                     }
                 },
