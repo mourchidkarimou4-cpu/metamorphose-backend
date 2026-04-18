@@ -57,8 +57,18 @@ def serve_manifest(request):
     import json
     return HttpResponse(json.dumps(data), content_type='application/manifest+json')
 
+def serve_icon(request, path):
+    from pathlib import Path
+    import mimetypes
+    icon_path = Path(settings.BASE_DIR) / 'frontend' / 'dist' / 'icons' / path
+    if icon_path.exists():
+        mime, _ = mimetypes.guess_type(str(icon_path))
+        return HttpResponse(icon_path.read_bytes(), content_type=mime or 'image/png')
+    return HttpResponse(status=404)
+
 def serve_asset(request, path):
-    asset_path = Path(settings.BASE_DIR) / 'frontend' / 'dist' / 'assets' / path
+    asset_path = Path(settings.BASE_DIR) / 'frontend' / 'dist' / path if path.startswith('../') else Path(settings.BASE_DIR) / 'frontend' / 'dist' / 'assets' / path
+    asset_path = asset_path.resolve()
     if asset_path.exists():
         mime, _ = mimetypes.guess_type(str(asset_path))
         return HttpResponse(asset_path.read_bytes(), content_type=mime or 'application/octet-stream')
@@ -67,5 +77,6 @@ def serve_asset(request, path):
 urlpatterns += [
     path('manifest.json', serve_manifest),
     re_path(r'^assets/(?P<path>.+)$', serve_asset),
+    re_path(r'^icons/(?P<path>.+)$', lambda req, path: serve_asset(req, '../icons/' + path)),
     re_path(r'^(?!api/|admin/|static/|media/|assets/|manifest\.json|sw\.js|icons/).*$', serve_react),
 ]
