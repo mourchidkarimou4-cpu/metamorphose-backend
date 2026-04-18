@@ -18,6 +18,8 @@ def creer_salle(request):
         code_acces=code.upper() if code else '',
         mode=request.data.get('mode', 'live'),
         max_participants=request.data.get('max_participants', 1000),
+        lien_zoom=request.data.get('lien_zoom', ''),
+        lien_zoom=request.data.get('lien_zoom', ''),
     )
 
     # Créer la room Daily.co
@@ -61,6 +63,7 @@ def creer_salle(request):
         'lien': lien,
         'statut': salle.statut,
         'daily_room_name': daily_room_name,
+        'lien_zoom': salle.lien_zoom,
         'created_at': salle.created_at,
     }, status=201)
 
@@ -80,6 +83,7 @@ def infos_salle(request, room_id):
         'participants': salle.participants.filter(quitte_at__isnull=True).count(),
         'max_participants': salle.max_participants,
         'protege': bool(salle.code_acces),
+        'lien_zoom': salle.lien_zoom,
     })
 
 @api_view(['POST'])
@@ -154,6 +158,7 @@ def salles_actives(request):
         'hote_nom': s.hote.first_name or s.hote.email,
         'participants_count': s.participants.filter(quitte_at__isnull=True).count(),
         'protege': bool(s.code_acces),
+        'lien_zoom': s.lien_zoom,
         'started_at': s.started_at,
         'created_at': s.created_at,
     } for s in salles])
@@ -226,6 +231,27 @@ def rejoindre_live_public(request, room_id):
     })
 
 
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def modifier_salle(request, room_id):
+    """Modifier une salle — notamment le lien Zoom."""
+    try:
+        salle = Salle.objects.get(id=room_id, hote=request.user)
+    except Salle.DoesNotExist:
+        return Response({'detail': 'Salle introuvable.'}, status=404)
+
+    for field in ['titre', 'description', 'lien_zoom', 'code_acces', 'mode']:
+        if field in request.data:
+            setattr(salle, field, request.data[field])
+    salle.save()
+    return Response({
+        'id': str(salle.id),
+        'titre': salle.titre,
+        'lien_zoom': salle.lien_zoom,
+        'statut': salle.statut,
+    })
+
 # ── Daily.co — Générer token de meeting ───────────────────────────
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -281,7 +307,7 @@ def daily_token(request, room_id):
                     'room_name': room_name,
                     'user_name': request.user.first_name or request.user.email,
                     'is_owner': is_owner or is_admin,
-                    'enable_recording': 'cloud' if (is_owner or is_admin) else False,
+
                     'start_video_off': False,
                     'start_audio_off': False,
                     'exp': int(timezone.now().timestamp()) + 7200,
@@ -301,3 +327,16 @@ def daily_token(request, room_id):
         return Response({'detail': f'Erreur Daily.co: {resp.text}'}, status=500)
     except Exception as e:
         return Response({'detail': str(e)}, status=500)
+
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def maj_lien_zoom(request, room_id):
+    """Mettre à jour le lien Zoom d'une salle."""
+    try:
+        salle = Salle.objects.get(id=room_id, hote=request.user)
+    except Salle.DoesNotExist:
+        return Response({'detail': 'Salle introuvable.'}, status=404)
+    salle.lien_zoom = request.data.get('lien_zoom', '')
+    salle.save()
+    return Response({'lien_zoom': salle.lien_zoom})

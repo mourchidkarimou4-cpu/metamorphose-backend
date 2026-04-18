@@ -16,6 +16,8 @@ class Salle(models.Model):
     ])
     enregistrement_actif = models.BooleanField(default=False)
     daily_room_name = models.CharField(max_length=200, blank=True)
+    lien_zoom = models.URLField(blank=True, help_text='Lien Zoom de la session')
+    lien_zoom = models.URLField(blank=True, help_text='Lien de réunion Zoom')
     created_at  = models.DateTimeField(auto_now_add=True)
     started_at  = models.DateTimeField(null=True, blank=True)
     ended_at    = models.DateTimeField(null=True, blank=True)
