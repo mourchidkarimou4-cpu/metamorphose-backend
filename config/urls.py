@@ -35,6 +35,28 @@ def serve_react(request, *args, **kwargs):
         return HttpResponse(index.read_text(), content_type='text/html')
     return HttpResponse('<h1>Frontend non buildé</h1>', status=200)
 
+def serve_manifest(request):
+    import json
+    from pathlib import Path
+    manifest = Path(settings.BASE_DIR) / 'frontend' / 'dist' / 'manifest.json'
+    if manifest.exists():
+        return HttpResponse(manifest.read_text(), content_type='application/manifest+json')
+    # Manifest par défaut
+    data = {
+        "name": "Méta'Morph'Ose",
+        "short_name": "MetaMorphOse",
+        "start_url": "/",
+        "display": "standalone",
+        "background_color": "#0A0A0A",
+        "theme_color": "#C2185B",
+        "icons": [
+            {"src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
+            {"src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png"}
+        ]
+    }
+    import json
+    return HttpResponse(json.dumps(data), content_type='application/manifest+json')
+
 def serve_asset(request, path):
     asset_path = Path(settings.BASE_DIR) / 'frontend' / 'dist' / 'assets' / path
     if asset_path.exists():
@@ -43,6 +65,7 @@ def serve_asset(request, path):
     return HttpResponse(status=404)
 
 urlpatterns += [
+    path('manifest.json', serve_manifest),
     re_path(r'^assets/(?P<path>.+)$', serve_asset),
     re_path(r'^(?!api/|admin/|static/|media/|assets/|manifest\.json|sw\.js|icons/).*$', serve_react),
 ]
