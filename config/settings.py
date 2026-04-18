@@ -119,8 +119,9 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Assets React (frontend build)
 FRONTEND_DIST = BASE_DIR / 'frontend' / 'dist'
-if FRONTEND_DIST.exists():
-    STATICFILES_DIRS = [FRONTEND_DIST / 'assets']
+FRONTEND_ASSETS = FRONTEND_DIST / 'assets'
+if FRONTEND_ASSETS.exists():
+    STATICFILES_DIRS = [FRONTEND_ASSETS]
 MEDIA_URL   = '/media/'
 MEDIA_ROOT  = BASE_DIR / 'media'
 
