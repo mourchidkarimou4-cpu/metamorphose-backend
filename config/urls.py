@@ -27,12 +27,22 @@ urlpatterns = [
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 # ── Servir le frontend React (catch-all) ─────────────────────────
+import mimetypes
+
 def serve_react(request, *args, **kwargs):
     index = Path(settings.BASE_DIR) / 'frontend' / 'dist' / 'index.html'
     if index.exists():
         return HttpResponse(index.read_text(), content_type='text/html')
-    return HttpResponse('<h1>Frontend non buildé</h1><p>Lancez npm run build dans metamorphose-frontend</p>', status=200)
+    return HttpResponse('<h1>Frontend non buildé</h1>', status=200)
+
+def serve_asset(request, path):
+    asset_path = Path(settings.BASE_DIR) / 'frontend' / 'dist' / 'assets' / path
+    if asset_path.exists():
+        mime, _ = mimetypes.guess_type(str(asset_path))
+        return HttpResponse(asset_path.read_bytes(), content_type=mime or 'application/octet-stream')
+    return HttpResponse(status=404)
 
 urlpatterns += [
-    re_path(r'^(?!api/|admin/|static/|media/).*$', serve_react),
+    re_path(r'^assets/(?P<path>.+)$', serve_asset),
+    re_path(r'^(?!api/|admin/|static/|media/|assets/).*$', serve_react),
 ]
