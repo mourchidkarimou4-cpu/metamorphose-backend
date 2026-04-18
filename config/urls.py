@@ -44,5 +44,5 @@ def serve_asset(request, path):
 
 urlpatterns += [
     re_path(r'^assets/(?P<path>.+)$', serve_asset),
-    re_path(r'^(?!api/|admin/|static/|media/|assets/).*$', serve_react),
+    re_path(r'^(?!api/|admin/|static/|media/|assets/|manifest\.json|sw\.js|icons/).*$', serve_react),
 ]
