@@ -284,7 +284,7 @@ def daily_token(request, room_id):
                     'room_name': room_name,
                     'user_name': request.user.first_name or request.user.email,
                     'is_owner': is_owner or is_admin,
-                    'enable_recording': is_owner or is_admin,
+                    'enable_recording': 'cloud' if (is_owner or is_admin) else False,
                     'start_video_off': False,
                     'start_audio_off': False,
                     'exp': int(timezone.now().timestamp()) + 7200,
