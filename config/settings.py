@@ -59,7 +59,7 @@ AUTH_USER_MODEL = 'accounts.CustomUser'
 
 TEMPLATES = [{
     'BACKEND': 'django.template.backends.django.DjangoTemplates',
-    'DIRS': [],
+    'DIRS': [BASE_DIR / 'frontend' / 'dist'],
     'APP_DIRS': True,
     'OPTIONS': {'context_processors': [
         'django.template.context_processors.debug',
@@ -116,6 +116,11 @@ CORS_ALLOW_CREDENTIALS = True
 STATIC_URL  = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# Assets React (frontend build)
+FRONTEND_DIST = BASE_DIR / 'frontend' / 'dist'
+if FRONTEND_DIST.exists():
+    STATICFILES_DIRS = [FRONTEND_DIST / 'assets']
 MEDIA_URL   = '/media/'
 MEDIA_ROOT  = BASE_DIR / 'media'
 

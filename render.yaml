@@ -2,7 +2,16 @@ services:
   - type: web
     name: metamorphose-backend
     env: python
-    buildCommand: pip install -r requirements.txt && python manage.py migrate && python manage.py collectstatic --noinput
+    buildCommand: >
+      pip install -r requirements.txt &&
+      curl -fsSL https://deb.nodesource.com/setup_20.x | bash - &&
+      apt-get install -y nodejs &&
+      cd /tmp && git clone https://github.com/mourchidkarimou4-cpu/metamorphose-frontend.git &&
+      cd /tmp/metamorphose-frontend && npm install && npm run build &&
+      cp -r /tmp/metamorphose-frontend/dist /opt/render/project/src/frontend/dist &&
+      cd /opt/render/project/src &&
+      python manage.py migrate &&
+      python manage.py collectstatic --noinput
     startCommand: daphne -b 0.0.0.0 -p $PORT config.asgi:application
     envVars:
       - key: PYTHON_VERSION
@@ -12,13 +21,13 @@ services:
       - key: DEBUG
         value: "False"
       - key: ALLOWED_HOSTS
-        value: ".onrender.com"
+        value: ".onrender.com,.metamorphose.coach"
       - key: DATABASE_URL
         fromDatabase:
           name: metamorphose-db
           property: connectionString
       - key: CORS_ALLOWED_ORIGINS
-        value: "https://metamorphose-frontend.vercel.app"
+        value: "https://metamorphose-backend.onrender.com"
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
       - key: CLOUDINARY_API_KEY
@@ -26,12 +35,14 @@ services:
       - key: CLOUDINARY_API_SECRET
         sync: false
       - key: FRONTEND_URL
-        value: "https://metamorphose-frontend.vercel.app"
+        value: "https://metamorphose-backend.onrender.com"
       - key: EMAIL_HOST_USER
         sync: false
       - key: EMAIL_HOST_PASSWORD
         sync: false
       - key: DEFAULT_FROM_EMAIL
+        sync: false
+      - key: DAILY_API_KEY
         sync: false
 databases:
   - name: metamorphose-db

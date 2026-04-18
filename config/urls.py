@@ -1,8 +1,11 @@
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 from administration import views as administration_views
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.generic import TemplateView
+from django.http import HttpResponse
+from pathlib import Path
 
 urlpatterns = [
     path('api/live/', include('live.urls')),
@@ -22,4 +25,14 @@ urlpatterns = [
     path('api/learning/', include('learning.urls')),
     path('api/tickets/', include('tickets.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-# Note : en production, les médias sont servis via Cloudinary (pas via Django)
+
+# ── Servir le frontend React (catch-all) ─────────────────────────
+def serve_react(request, *args, **kwargs):
+    index = Path(settings.BASE_DIR) / 'frontend' / 'dist' / 'index.html'
+    if index.exists():
+        return HttpResponse(index.read_text(), content_type='text/html')
+    return HttpResponse('<h1>Frontend non buildé</h1><p>Lancez npm run build dans metamorphose-frontend</p>', status=200)
+
+urlpatterns += [
+    re_path(r'^(?!api/|admin/|static/|media/).*$', serve_react),
+]
