@@ -28,6 +28,9 @@ echo "=== Copie du build vers Django ==="
 cd /opt/render/project/src
 mkdir -p frontend/dist
 cp -r "$FRONTEND_DIR/dist/." frontend/dist/
+# Copier les icônes PWA
+mkdir -p frontend/dist/icons
+cp -r "$FRONTEND_DIR/public/icons/." frontend/dist/icons/
 
 echo "=== Migrations Django ==="
 python manage.py migrate
