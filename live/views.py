@@ -19,7 +19,6 @@ def creer_salle(request):
         mode=request.data.get('mode', 'live'),
         max_participants=request.data.get('max_participants', 1000),
         lien_zoom=request.data.get('lien_zoom', ''),
-        lien_zoom=request.data.get('lien_zoom', ''),
     )
 
     # Créer la room Daily.co
