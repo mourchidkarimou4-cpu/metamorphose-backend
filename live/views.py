@@ -245,6 +245,34 @@ def daily_token(request, room_id):
     is_admin = request.user.is_staff
 
     try:
+        room_name = salle.daily_room_name or str(salle.id).replace('-', '')
+
+        # Créer la room Daily si elle n'existe pas encore
+        if not salle.daily_room_name:
+            create_resp = http_requests.post(
+                'https://api.daily.co/v1/rooms',
+                headers={
+                    'Authorization': f'Bearer {daily_api_key}',
+                    'Content-Type': 'application/json',
+                },
+                json={
+                    'name': room_name,
+                    'properties': {
+                        'max_participants': salle.max_participants,
+                        'enable_chat': True,
+                        'enable_screenshare': True,
+                        'enable_recording': 'cloud',
+                        'exp': int(timezone.now().timestamp()) + 86400,
+                    }
+                },
+                timeout=10
+            )
+            if create_resp.status_code in [200, 201]:
+                room_name = create_resp.json().get('name', room_name)
+                salle.daily_room_name = room_name
+                salle.save()
+
+        # Générer le token de meeting
         resp = http_requests.post(
             'https://api.daily.co/v1/meeting-tokens',
             headers={
@@ -253,26 +281,26 @@ def daily_token(request, room_id):
             },
             json={
                 'properties': {
-                    'room_name': salle.daily_room_name or str(salle.id).replace('-', ''),
+                    'room_name': room_name,
                     'user_name': request.user.first_name or request.user.email,
                     'is_owner': is_owner or is_admin,
                     'enable_recording': is_owner or is_admin,
                     'start_video_off': False,
                     'start_audio_off': False,
-                    'exp': int(timezone.now().timestamp()) + 7200,  # 2h
+                    'exp': int(timezone.now().timestamp()) + 7200,
                 }
             },
             timeout=10
         )
         if resp.status_code in [200, 201]:
             token = resp.json().get('token', '')
-            room_url = f"https://masterclass-ose-live.daily.co/{salle.daily_room_name or str(salle.id).replace('-', '')}"
+            room_url = f"https://masterclass-ose-live.daily.co/{room_name}"
             return Response({
                 'token': token,
                 'room_url': room_url,
-                'room_name': salle.daily_room_name,
+                'room_name': room_name,
                 'is_owner': is_owner or is_admin,
             })
-        return Response({'detail': 'Erreur Daily.co', 'status': resp.status_code}, status=500)
+        return Response({'detail': f'Erreur Daily.co: {resp.text}'}, status=500)
     except Exception as e:
         return Response({'detail': str(e)}, status=500)
