@@ -69,6 +69,9 @@ def admin_evenement_detail(request, pk):
             setattr(e, field, val)
     if 'photo' in request.FILES:
         e.photo = request.FILES['photo']
+        e.photo_url = ''
+    elif 'photo_url' in request.data and request.data['photo_url']:
+        e.photo_url = request.data['photo_url']
     e.save()
     return Response(evt_data(e))
 
@@ -117,5 +120,8 @@ def admin_actualite_detail(request, pk):
             setattr(a, field, val)
     if 'photo' in request.FILES:
         a.photo = request.FILES['photo']
+        a.photo_url = ''
+    elif 'photo_url' in request.data and request.data['photo_url']:
+        a.photo_url = request.data['photo_url']
     a.save()
     return Response(actu_data(a))
