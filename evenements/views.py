@@ -6,30 +6,19 @@ from .models import Evenement, Actualite
 import cloudinary.uploader
 
 def evt_data(e):
-    photo = ''
-    if e.photo:
-        try: photo = e.photo.url
-        except: photo = ''
-    if not photo and hasattr(e, 'photo_url') and e.photo_url:
-        photo = e.photo_url
     return {
         'id': e.id, 'titre': e.titre, 'badge': e.badge,
         'badge_color': e.badge_color, 'date': e.date, 'lieu': e.lieu,
         'description': e.description, 'bouton': e.bouton, 'lien': e.lien,
-        'photo': photo, 'statut': e.statut, 'ordre': e.ordre, 'actif': e.actif,
+        'photo': e.photo.url if e.photo else '',
+        'statut': e.statut, 'ordre': e.ordre, 'actif': e.actif,
     }
 
 def actu_data(a):
-    photo = ''
-    if a.photo:
-        try: photo = a.photo.url
-        except: photo = ''
-    if not photo and hasattr(a, 'photo_url') and a.photo_url:
-        photo = a.photo_url
     return {
         'id': a.id, 'titre': a.titre, 'categorie': a.categorie,
         'date': a.date, 'resume': a.resume, 'bouton': a.bouton,
-        'lien': a.lien, 'photo': photo,
+        'lien': a.lien, 'photo': a.photo.url if a.photo else '',
         'color': a.color, 'ordre': a.ordre, 'actif': a.actif,
     }
 
@@ -62,9 +51,6 @@ def admin_evenements(request):
     if 'photo' in request.FILES:
         e.photo = request.FILES['photo']
         e.save()
-    elif 'photo_url' in request.data and request.data['photo_url']:
-        e.photo_url = request.data['photo_url']
-        e.save()
     return Response(evt_data(e), status=201)
 
 @api_view(['PATCH','DELETE'])
@@ -79,15 +65,10 @@ def admin_evenement_detail(request, pk):
         if field in request.data:
             val = request.data[field]
             if field == 'actif': val = val in [True,'true','1']
-            if field == 'ordre':
-                try: val = int(val)
-                except: val = 0
+            if field == 'ordre': val = int(val)
             setattr(e, field, val)
     if 'photo' in request.FILES:
         e.photo = request.FILES['photo']
-        if hasattr(e, 'photo_url'): e.photo_url = ''
-    elif 'photo_url' in request.data and request.data['photo_url']:
-        if hasattr(e, 'photo_url'): e.photo_url = request.data['photo_url']
     e.save()
     return Response(evt_data(e))
 
@@ -95,7 +76,7 @@ def admin_evenement_detail(request, pk):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def liste_actualites(request):
-    actus = Actualite.objects.filter(actif=True).order_by('ordre', '-created_at')
+    actus = Actualite.objects.filter(actif=True)
     return Response([actu_data(a) for a in actus])
 
 @api_view(['GET','POST'])
@@ -103,7 +84,7 @@ def liste_actualites(request):
 @parser_classes([MultiPartParser, FormParser, JSONParser])
 def admin_actualites(request):
     if request.method == 'GET':
-        actus = Actualite.objects.all().order_by('ordre', '-created_at')
+        actus = Actualite.objects.all()
         return Response([actu_data(a) for a in actus])
     a = Actualite.objects.create(
         titre=request.data.get('titre',''),
@@ -117,9 +98,6 @@ def admin_actualites(request):
     )
     if 'photo' in request.FILES:
         a.photo = request.FILES['photo']
-        a.save()
-    elif 'photo_url' in request.data and request.data['photo_url']:
-        if hasattr(a, 'photo_url'): a.photo_url = request.data['photo_url']
         a.save()
     return Response(actu_data(a), status=201)
 
@@ -135,14 +113,9 @@ def admin_actualite_detail(request, pk):
         if field in request.data:
             val = request.data[field]
             if field == 'actif': val = val in [True,'true','1']
-            if field == 'ordre':
-                try: val = int(val)
-                except: val = 0
+            if field == 'ordre': val = int(val)
             setattr(a, field, val)
     if 'photo' in request.FILES:
         a.photo = request.FILES['photo']
-        if hasattr(a, 'photo_url'): a.photo_url = ''
-    elif 'photo_url' in request.data and request.data['photo_url']:
-        if hasattr(a, 'photo_url'): a.photo_url = request.data['photo_url']
     a.save()
     return Response(actu_data(a))
