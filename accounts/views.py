@@ -109,6 +109,255 @@ def contact(request):
     return Response({'detail': 'Demande reçue.'}, status=201)
 
 
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def confirmer_paiement(request):
+    """
+    Appelée quand la cliente déclare avoir effectué son paiement.
+    Envoie un email de reçu à la cliente + notification à Prélia.
+    """
+    from contenu.models import DemandeContact
+    from django.utils import timezone
+
+    data = request.data
+    prenom   = data.get("prenom", "")
+    nom      = data.get("nom", "")
+    email    = data.get("email", "")
+    whatsapp = data.get("whatsapp", "")
+    pays     = data.get("pays", "")
+    formule  = data.get("formule", "")
+    message  = data.get("message", "")
+
+    FORMULES = {
+        "F1": {"label": "ESSENTIELLE",   "prix": "70 000 FCFA",  "desc": "Accompagnement de groupe en ligne"},
+        "F2": {"label": "PERSONNALISÉE", "prix": "160 000 FCFA", "desc": "Accompagnement individuel en ligne"},
+        "F3": {"label": "IMMERSION",     "prix": "267 000 FCFA", "desc": "Accompagnement de groupe en présentiel"},
+        "F4": {"label": "VIP",           "prix": "370 000 FCFA", "desc": "Accompagnement individuel en présentiel"},
+    }
+
+    f = FORMULES.get(formule, {"label": formule, "prix": "—", "desc": ""})
+    date_str = timezone.now().strftime("%d/%m/%Y à %Hh%M")
+
+    # ── Sauvegarder la demande avec statut paiement déclaré ──
+    try:
+        DemandeContact.objects.create(
+            prenom=prenom, nom=nom, email=email,
+            whatsapp=whatsapp, pays=pays, formule=formule,
+            message=f"[PAIEMENT DÉCLARÉ le {date_str}] {message}"
+        )
+    except Exception as e:
+        logger.warning(f"Erreur sauvegarde demande paiement : {e}")
+
+    # ── Email HTML reçu cliente ──────────────────────────────
+    email_cliente_html = f"""
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Confirmation de paiement — Méta'Morph'Ose</title>
+</head>
+<body style="margin:0;padding:0;background:#0A0A0A;font-family:'Helvetica Neue',Arial,sans-serif;">
+  <div style="max-width:600px;margin:0 auto;padding:40px 20px;">
+
+    <!-- En-tête -->
+    <div style="text-align:center;margin-bottom:40px;">
+      <h1 style="font-family:Georgia,serif;font-size:28px;color:#F8F5F2;margin:0;font-weight:400;">
+        Méta'<span style="color:#C9A96A;">Morph'</span><span style="color:#C2185B;">Ose</span>
+      </h1>
+      <p style="color:rgba(248,245,242,.4);font-size:11px;letter-spacing:3px;text-transform:uppercase;margin:8px 0 0;">
+        Programme de transformation féminine
+      </p>
+    </div>
+
+    <!-- Carte principale -->
+    <div style="background:#111111;border:1px solid rgba(201,169,106,.2);border-radius:8px;padding:40px;margin-bottom:24px;">
+
+      <!-- Icône succès -->
+      <div style="text-align:center;margin-bottom:32px;">
+        <div style="width:64px;height:64px;border-radius:50%;background:rgba(76,175,80,.1);border:2px solid #4CAF50;display:inline-flex;align-items:center;justify-content:center;">
+          <span style="color:#4CAF50;font-size:28px;">✓</span>
+        </div>
+      </div>
+
+      <h2 style="font-family:Georgia,serif;font-size:24px;color:#F8F5F2;text-align:center;margin:0 0 8px;font-weight:600;">
+        Paiement déclaré avec succès
+      </h2>
+      <p style="color:rgba(248,245,242,.5);text-align:center;font-size:14px;margin:0 0 32px;">
+        Bonjour {prenom}, merci pour votre confiance.
+      </p>
+
+      <!-- Séparateur or -->
+      <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(201,169,106,.4),transparent);margin-bottom:32px;"></div>
+
+      <!-- Détails du reçu -->
+      <h3 style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:rgba(201,169,106,.6);margin:0 0 20px;">
+        Récapitulatif
+      </h3>
+
+      <table style="width:100%;border-collapse:collapse;">
+        <tr>
+          <td style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);color:rgba(248,245,242,.4);font-size:13px;">Nom complet</td>
+          <td style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);color:#F8F5F2;font-size:13px;text-align:right;font-weight:500;">{prenom} {nom}</td>
+        </tr>
+        <tr>
+          <td style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);color:rgba(248,245,242,.4);font-size:13px;">Email</td>
+          <td style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);color:#F8F5F2;font-size:13px;text-align:right;">{email}</td>
+        </tr>
+        <tr>
+          <td style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);color:rgba(248,245,242,.4);font-size:13px;">WhatsApp</td>
+          <td style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);color:#F8F5F2;font-size:13px;text-align:right;">{whatsapp}</td>
+        </tr>
+        <tr>
+          <td style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);color:rgba(248,245,242,.4);font-size:13px;">Pays</td>
+          <td style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);color:#F8F5F2;font-size:13px;text-align:right;">{pays}</td>
+        </tr>
+        <tr>
+          <td style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);color:rgba(248,245,242,.4);font-size:13px;">Formule</td>
+          <td style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);color:#C2185B;font-size:13px;text-align:right;font-weight:600;">{f["label"]}</td>
+        </tr>
+        <tr>
+          <td style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);color:rgba(248,245,242,.4);font-size:13px;">Description</td>
+          <td style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);color:#F8F5F2;font-size:13px;text-align:right;">{f["desc"]}</td>
+        </tr>
+        <tr>
+          <td style="padding:16px 0 0;color:rgba(248,245,242,.4);font-size:13px;">Montant déclaré</td>
+          <td style="padding:16px 0 0;color:#C9A96A;font-size:20px;text-align:right;font-weight:700;">{f["prix"]}</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0 0;color:rgba(248,245,242,.4);font-size:12px;">Date de déclaration</td>
+          <td style="padding:8px 0 0;color:rgba(248,245,242,.5);font-size:12px;text-align:right;">{date_str}</td>
+        </tr>
+      </table>
+
+      <!-- Séparateur -->
+      <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(201,169,106,.4),transparent);margin:32px 0;"></div>
+
+      <!-- Message important -->
+      <div style="background:rgba(201,169,106,.06);border:1px solid rgba(201,169,106,.15);border-radius:4px;padding:20px;">
+        <p style="color:#C9A96A;font-size:12px;letter-spacing:2px;text-transform:uppercase;margin:0 0 8px;">Prochaine étape</p>
+        <p style="color:rgba(248,245,242,.7);font-size:14px;line-height:1.8;margin:0;">
+          Prélia APEDO AHONON va vérifier votre paiement et vous contacter sous <strong style="color:#F8F5F2;">24 à 48 heures</strong> 
+          sur WhatsApp pour confirmer votre place et vous donner accès au programme.
+        </p>
+      </div>
+    </div>
+
+    <!-- Contact -->
+    <div style="background:#111111;border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:24px;margin-bottom:24px;text-align:center;">
+      <p style="color:rgba(248,245,242,.4);font-size:12px;margin:0 0 12px;">Pour toute question urgente</p>
+      <a href="https://wa.me/22901961140" style="color:#C9A96A;font-size:13px;text-decoration:none;display:block;margin-bottom:6px;">
+        WhatsApp : +229 01 96 11 40 93
+      </a>
+      <a href="mailto:whiteblackdress22@gmail.com" style="color:#C9A96A;font-size:13px;text-decoration:none;">
+        whiteblackdress22@gmail.com
+      </a>
+    </div>
+
+    <!-- Footer -->
+    <div style="text-align:center;">
+      <p style="font-family:Georgia,serif;font-style:italic;color:rgba(201,169,106,.4);font-size:14px;margin:0;">
+        Votre renaissance commence ici.
+      </p>
+      <p style="color:rgba(248,245,242,.2);font-size:11px;margin:12px 0 0;">
+        © 2026 Méta'Morph'Ose · White & Black · Prélia APEDO AHONON
+      </p>
+    </div>
+
+  </div>
+</body>
+</html>
+"""
+
+    # ── Email notification Prélia ────────────────────────────
+    email_prelia_html = f"""
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"><title>Nouveau paiement déclaré</title></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;">
+  <div style="max-width:600px;margin:0 auto;padding:32px 16px;">
+    <div style="background:#fff;border-radius:8px;padding:32px;border:1px solid #e0e0e0;">
+      <h2 style="color:#C2185B;margin:0 0 8px;font-size:20px;">Nouveau paiement déclaré</h2>
+      <p style="color:#666;font-size:13px;margin:0 0 24px;">{date_str}</p>
+      <table style="width:100%;border-collapse:collapse;">
+        <tr style="background:#f9f9f9;">
+          <td style="padding:10px 14px;border:1px solid #eee;font-size:13px;color:#666;">Nom</td>
+          <td style="padding:10px 14px;border:1px solid #eee;font-size:13px;font-weight:600;">{prenom} {nom}</td>
+        </tr>
+        <tr>
+          <td style="padding:10px 14px;border:1px solid #eee;font-size:13px;color:#666;">Email</td>
+          <td style="padding:10px 14px;border:1px solid #eee;font-size:13px;">{email}</td>
+        </tr>
+        <tr style="background:#f9f9f9;">
+          <td style="padding:10px 14px;border:1px solid #eee;font-size:13px;color:#666;">WhatsApp</td>
+          <td style="padding:10px 14px;border:1px solid #eee;font-size:13px;">{whatsapp}</td>
+        </tr>
+        <tr>
+          <td style="padding:10px 14px;border:1px solid #eee;font-size:13px;color:#666;">Pays</td>
+          <td style="padding:10px 14px;border:1px solid #eee;font-size:13px;">{pays}</td>
+        </tr>
+        <tr style="background:#f9f9f9;">
+          <td style="padding:10px 14px;border:1px solid #eee;font-size:13px;color:#666;">Formule</td>
+          <td style="padding:10px 14px;border:1px solid #eee;font-size:13px;color:#C2185B;font-weight:700;">{f["label"]}</td>
+        </tr>
+        <tr>
+          <td style="padding:10px 14px;border:1px solid #eee;font-size:13px;color:#666;">Montant</td>
+          <td style="padding:10px 14px;border:1px solid #eee;font-size:16px;color:#C9A96A;font-weight:700;">{f["prix"]}</td>
+        </tr>
+        {'<tr style="background:#f9f9f9;"><td style="padding:10px 14px;border:1px solid #eee;font-size:13px;color:#666;">Message</td><td style="padding:10px 14px;border:1px solid #eee;font-size:13px;">' + message + '</td></tr>' if message else ''}
+      </table>
+      <div style="margin-top:24px;padding:16px;background:#fff3e0;border-radius:4px;border-left:4px solid #C9A96A;">
+        <p style="margin:0;font-size:13px;color:#666;">
+          <strong>Action requise :</strong> Vérifiez le paiement de {prenom} dans votre application de paiement, 
+          puis confirmez son accès au programme dans le dashboard admin.
+        </p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+"""
+
+    # ── Envoi des emails ─────────────────────────────────────
+    from django.core.mail import EmailMultiAlternatives
+
+    # Email à la cliente
+    if email:
+        try:
+            msg_cliente = EmailMultiAlternatives(
+                subject=f"Méta'Morph'Ose · Confirmation de paiement — Formule {f['label']}",
+                body=f"Bonjour {prenom},\n\nVotre paiement de {f['prix']} pour la formule {f['label']} a bien été déclaré.\nPrélia vous contactera sous 24-48h.\n\nMéta'Morph'Ose",
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[email],
+            )
+            msg_cliente.attach_alternative(email_cliente_html, "text/html")
+            msg_cliente.send(fail_silently=True)
+        except Exception as e:
+            logger.warning(f"Email reçu cliente non envoyé : {e}")
+
+    # Email à Prélia
+    try:
+        admin_email = settings.ADMIN_EMAIL or settings.EMAIL_HOST_USER
+        if admin_email:
+            msg_admin = EmailMultiAlternatives(
+                subject=f"[MMO] Paiement déclaré — {prenom} {nom} · {f['label']} · {f['prix']}",
+                body=f"Nouveau paiement déclaré par {prenom} {nom} ({email}) pour la formule {f['label']} à {f['prix']}.",
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[admin_email],
+            )
+            msg_admin.attach_alternative(email_prelia_html, "text/html")
+            msg_admin.send(fail_silently=True)
+    except Exception as e:
+        logger.warning(f"Email notification Prélia non envoyé : {e}")
+
+    return Response({
+        "detail": "Paiement déclaré. Email de confirmation envoyé.",
+        "prenom": prenom,
+        "formule": f["label"],
+        "montant": f["prix"],
+    }, status=201)
+
+
 @api_view(["PATCH"])
 @permission_classes([IsAuthenticated])
 def update_profile(request):
