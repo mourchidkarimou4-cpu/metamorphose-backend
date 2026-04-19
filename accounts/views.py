@@ -358,6 +358,119 @@ def confirmer_paiement(request):
     }, status=201)
 
 
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def confirmer_don(request):
+    """Appelée quand le donateur déclare avoir effectué son don."""
+    from django.utils import timezone
+    from django.core.mail import EmailMultiAlternatives
+
+    data     = request.data
+    prenom   = data.get("prenom", "")
+    nom      = data.get("nom", "")
+    email    = data.get("email", "")
+    telephone= data.get("telephone", "")
+    montant  = data.get("montant", 0)
+    message  = data.get("message", "")
+    anonyme  = data.get("anonyme", False)
+    date_str = timezone.now().strftime("%d/%m/%Y à %Hh%M")
+    montant_str = f"{int(montant):,}".replace(",", " ") + " FCFA"
+
+    nom_affiche = "Donateur anonyme" if anonyme else f"{prenom} {nom}".strip()
+
+    # Email HTML au donateur
+    email_don_html = f"""
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"><title>Confirmation de don — Méta'Morph'Ose</title></head>
+<body style="margin:0;padding:0;background:#0A0A0A;font-family:'Helvetica Neue',Arial,sans-serif;">
+  <div style="max-width:600px;margin:0 auto;padding:40px 20px;">
+    <div style="text-align:center;margin-bottom:40px;">
+      <h1 style="font-family:Georgia,serif;font-size:28px;color:#F8F5F2;margin:0;font-weight:400;">
+        Méta'<span style="color:#C9A96A;">Morph'</span><span style="color:#C2185B;">Ose</span>
+      </h1>
+    </div>
+    <div style="background:#111111;border:1px solid rgba(201,169,106,.2);border-radius:8px;padding:40px;margin-bottom:24px;">
+      <div style="text-align:center;margin-bottom:32px;">
+        <div style="width:64px;height:64px;border-radius:50%;background:rgba(201,169,106,.1);border:2px solid #C9A96A;display:inline-flex;align-items:center;justify-content:center;">
+          <span style="color:#C9A96A;font-size:28px;">♡</span>
+        </div>
+      </div>
+      <h2 style="font-family:Georgia,serif;font-size:22px;color:#F8F5F2;text-align:center;margin:0 0 8px;">Don déclaré avec succès</h2>
+      <p style="color:rgba(248,245,242,.5);text-align:center;font-size:14px;margin:0 0 32px;">Merci {prenom} pour votre générosité.</p>
+      <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(201,169,106,.4),transparent);margin-bottom:28px;"></div>
+      <table style="width:100%;border-collapse:collapse;">
+        <tr><td style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05);color:rgba(248,245,242,.4);font-size:13px;">Donateur</td><td style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05);color:#F8F5F2;font-size:13px;text-align:right;">{nom_affiche}</td></tr>
+        <tr><td style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05);color:rgba(248,245,242,.4);font-size:13px;">Email</td><td style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05);color:#F8F5F2;font-size:13px;text-align:right;">{email}</td></tr>
+        <tr><td style="padding:16px 0 0;color:rgba(248,245,242,.4);font-size:13px;">Montant déclaré</td><td style="padding:16px 0 0;color:#C9A96A;font-size:22px;text-align:right;font-weight:700;">{montant_str}</td></tr>
+        <tr><td style="padding:8px 0 0;color:rgba(248,245,242,.4);font-size:12px;">Date</td><td style="padding:8px 0 0;color:rgba(248,245,242,.5);font-size:12px;text-align:right;">{date_str}</td></tr>
+      </table>
+      <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(201,169,106,.4),transparent);margin:28px 0;"></div>
+      <p style="color:rgba(248,245,242,.6);font-size:14px;line-height:1.8;text-align:center;font-style:italic;">
+        Votre générosité ouvre des portes. Merci de faire partie de cette mission de transformation.
+      </p>
+    </div>
+    <div style="text-align:center;">
+      <p style="font-family:Georgia,serif;font-style:italic;color:rgba(201,169,106,.4);font-size:14px;">© 2026 Méta'Morph'Ose · White & Black</p>
+    </div>
+  </div>
+</body>
+</html>
+"""
+
+    # Email notification Prélia
+    email_admin_html = f"""
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;">
+  <div style="max-width:600px;margin:0 auto;padding:32px 16px;">
+    <div style="background:#fff;border-radius:8px;padding:32px;border:1px solid #e0e0e0;">
+      <h2 style="color:#C9A96A;margin:0 0 8px;">Nouveau don déclaré</h2>
+      <p style="color:#666;font-size:13px;margin:0 0 24px;">{date_str}</p>
+      <table style="width:100%;border-collapse:collapse;">
+        <tr style="background:#f9f9f9;"><td style="padding:10px 14px;border:1px solid #eee;font-size:13px;color:#666;">Donateur</td><td style="padding:10px 14px;border:1px solid #eee;font-size:13px;font-weight:600;">{nom_affiche}</td></tr>
+        <tr><td style="padding:10px 14px;border:1px solid #eee;font-size:13px;color:#666;">Email</td><td style="padding:10px 14px;border:1px solid #eee;font-size:13px;">{email}</td></tr>
+        <tr style="background:#f9f9f9;"><td style="padding:10px 14px;border:1px solid #eee;font-size:13px;color:#666;">Téléphone</td><td style="padding:10px 14px;border:1px solid #eee;font-size:13px;">{telephone}</td></tr>
+        <tr><td style="padding:10px 14px;border:1px solid #eee;font-size:16px;color:#666;">Montant</td><td style="padding:10px 14px;border:1px solid #eee;font-size:18px;color:#C9A96A;font-weight:700;">{montant_str}</td></tr>
+        {'<tr style=\"background:#f9f9f9;\"><td style=\"padding:10px 14px;border:1px solid #eee;font-size:13px;color:#666;\">Message</td><td style=\"padding:10px 14px;border:1px solid #eee;font-size:13px;\">' + message + '</td></tr>' if message else ''}
+      </table>
+    </div>
+  </div>
+</body>
+</html>
+"""
+
+    # Envoi emails
+    if email and not anonyme:
+        try:
+            msg = EmailMultiAlternatives(
+                subject="Méta'Morph'Ose · Confirmation de votre don",
+                body=f"Bonjour {prenom},\n\nVotre don de {montant_str} a bien été déclaré. Merci pour votre générosité.\n\nMéta'Morph'Ose",
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[email],
+            )
+            msg.attach_alternative(email_don_html, "text/html")
+            msg.send(fail_silently=True)
+        except Exception as e:
+            logger.warning(f"Email reçu don non envoyé : {e}")
+
+    try:
+        admin_email = settings.ADMIN_EMAIL or settings.EMAIL_HOST_USER
+        if admin_email:
+            msg_admin = EmailMultiAlternatives(
+                subject=f"[MMO] Don déclaré — {nom_affiche} · {montant_str}",
+                body=f"Don déclaré : {nom_affiche} - {montant_str}",
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[admin_email],
+            )
+            msg_admin.attach_alternative(email_admin_html, "text/html")
+            msg_admin.send(fail_silently=True)
+    except Exception as e:
+        logger.warning(f"Email notification don Prélia non envoyé : {e}")
+
+    return Response({"detail": "Don déclaré.", "montant": montant_str}, status=201)
+
+
 @api_view(["PATCH"])
 @permission_classes([IsAuthenticated])
 def update_profile(request):
