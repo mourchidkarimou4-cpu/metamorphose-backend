@@ -471,6 +471,295 @@ def confirmer_don(request):
     return Response({"detail": "Don déclaré.", "montant": montant_str}, status=201)
 
 
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def reserver_brunch(request):
+    """
+    Étape 1 : La cliente remplit le formulaire.
+    Crée la réservation et retourne le token + lien de paiement.
+    """
+    from contenu.models import ReservationBrunch
+    from contenu.models import SiteConfig
+    from django.utils import timezone
+
+    data      = request.data
+    prenom    = data.get("prenom", "").strip()
+    nom       = data.get("nom", "").strip()
+    email     = data.get("email", "").strip()
+    whatsapp  = data.get("whatsapp", "").strip()
+    type_pass = data.get("type_pass", "decouverte")
+
+    if not prenom or not nom or not email or not whatsapp:
+        return Response({"detail": "Tous les champs sont requis."}, status=400)
+
+    MONTANTS = {
+        "metamorphosee": 50000,
+        "decouverte":    30000,
+        "vip":           60000,
+    }
+    montant = MONTANTS.get(type_pass, 30000)
+
+    reservation = ReservationBrunch.objects.create(
+        prenom=prenom, nom=nom, email=email,
+        whatsapp=whatsapp, type_pass=type_pass, montant=montant,
+        statut="en_attente",
+    )
+
+    # Récupérer le lien de paiement depuis SiteConfig
+    lien_paiement = ""
+    try:
+        cfg = SiteConfig.objects.filter(cle=f"brunch_lien_{type_pass}").first()
+        if not cfg:
+            cfg = SiteConfig.objects.filter(cle="brunch_lien_paiement").first()
+        if cfg:
+            lien_paiement = cfg.valeur
+    except Exception:
+        pass
+
+    # URL de succès avec token sécurisé
+    success_url = f"/brunch/success?token={reservation.token_succes}"
+
+    return Response({
+        "token":          reservation.token_succes,
+        "lien_paiement":  lien_paiement,
+        "success_url":    success_url,
+        "montant":        montant,
+        "type_pass":      type_pass,
+    }, status=201)
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def valider_paiement_brunch(request):
+    """
+    Étape 2 : La cliente déclare avoir payé.
+    Marque la réservation comme payée et retourne le lien WhatsApp.
+    """
+    from contenu.models import ReservationBrunch, SiteConfig
+    from django.core.mail import EmailMultiAlternatives
+    from django.utils import timezone
+
+    token = request.data.get("token", "")
+    if not token:
+        return Response({"detail": "Token manquant."}, status=400)
+
+    try:
+        reservation = ReservationBrunch.objects.get(token_succes=token)
+    except ReservationBrunch.DoesNotExist:
+        return Response({"detail": "Réservation introuvable."}, status=404)
+
+    reservation.statut = "paye"
+    reservation.save()
+
+    PASS_LABELS = {
+        "metamorphosee": "Pass Métamorphosée — 50 000 FCFA",
+        "decouverte":    "Pass Découverte — 30 000 FCFA",
+        "vip":           "Pass VIP — 60 000 FCFA",
+    }
+    pass_label  = PASS_LABELS.get(reservation.type_pass, reservation.type_pass)
+    date_str    = timezone.now().strftime("%d/%m/%Y à %Hh%M")
+    montant_str = f"{reservation.montant:,}".replace(",", " ") + " FCFA"
+
+    # Récupérer lien WhatsApp groupe depuis SiteConfig
+    wa_groupe = ""
+    try:
+        cfg = SiteConfig.objects.filter(cle="brunch_whatsapp_groupe").first()
+        if cfg:
+            wa_groupe = cfg.valeur
+    except Exception:
+        pass
+
+    # Email de confirmation à la cliente
+    email_html = f"""
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"><title>Confirmation — Brunch des Métamorphosées 2026</title></head>
+<body style="margin:0;padding:0;background:#0A0A0A;font-family:'Helvetica Neue',Arial,sans-serif;">
+  <div style="max-width:600px;margin:0 auto;padding:40px 20px;">
+    <div style="text-align:center;margin-bottom:40px;">
+      <h1 style="font-family:Georgia,serif;font-size:28px;color:#F8F5F2;font-weight:400;">
+        Méta'<span style="color:#C9A96A;">Morph'</span><span style="color:#C2185B;">Ose</span>
+      </h1>
+      <p style="color:rgba(248,245,242,.4);font-size:11px;letter-spacing:3px;text-transform:uppercase;">Brunch des Métamorphosées 2026</p>
+    </div>
+    <div style="background:#111;border:1px solid rgba(201,169,106,.2);border-radius:8px;padding:40px;">
+      <div style="text-align:center;margin-bottom:28px;">
+        <div style="width:64px;height:64px;border-radius:50%;background:rgba(76,175,80,.1);border:2px solid #4CAF50;display:inline-flex;align-items:center;justify-content:center;color:#4CAF50;font-size:28px;font-weight:700;">&#10003;</div>
+      </div>
+      <h2 style="font-family:Georgia,serif;font-size:22px;color:#F8F5F2;text-align:center;margin:0 0 8px;">Paiement déclaré avec succès</h2>
+      <p style="color:rgba(248,245,242,.5);text-align:center;font-size:14px;margin:0 0 32px;">Bravo {reservation.prenom}, ton inscription a bien été reçue.</p>
+      <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(201,169,106,.4),transparent);margin-bottom:28px;"></div>
+      <table style="width:100%;border-collapse:collapse;">
+        <tr><td style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05);color:rgba(248,245,242,.4);font-size:13px;">Nom</td><td style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05);color:#F8F5F2;font-size:13px;text-align:right;">{reservation.prenom} {reservation.nom}</td></tr>
+        <tr><td style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05);color:rgba(248,245,242,.4);font-size:13px;">Email</td><td style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05);color:#F8F5F2;font-size:13px;text-align:right;">{reservation.email}</td></tr>
+        <tr><td style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05);color:rgba(248,245,242,.4);font-size:13px;">WhatsApp</td><td style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05);color:#F8F5F2;font-size:13px;text-align:right;">{reservation.whatsapp}</td></tr>
+        <tr><td style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05);color:rgba(248,245,242,.4);font-size:13px;">Pass choisi</td><td style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05);color:#C2185B;font-size:13px;text-align:right;font-weight:600;">{pass_label}</td></tr>
+        <tr><td style="padding:14px 0 0;color:rgba(248,245,242,.4);font-size:13px;">Montant déclaré</td><td style="padding:14px 0 0;color:#C9A96A;font-size:20px;text-align:right;font-weight:700;">{montant_str}</td></tr>
+        <tr><td style="padding:6px 0 0;color:rgba(248,245,242,.4);font-size:12px;">Date</td><td style="padding:6px 0 0;color:rgba(248,245,242,.5);font-size:12px;text-align:right;">{date_str}</td></tr>
+      </table>
+      <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(201,169,106,.4),transparent);margin:28px 0;"></div>
+      <div style="background:rgba(194,24,91,.06);border:1px solid rgba(194,24,91,.2);border-radius:4px;padding:20px;text-align:center;">
+        <p style="color:#C2185B;font-size:12px;letter-spacing:2px;text-transform:uppercase;margin:0 0 8px;">Prochaine étape</p>
+        <p style="color:rgba(248,245,242,.7);font-size:14px;line-height:1.8;margin:0;">
+          Prélia APEDO AHONON vérifiera ton paiement et te contactera pour confirmer ta place. 
+          Rejoins le groupe WhatsApp pour valider ton inscription.
+        </p>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:32px;">
+      <p style="font-family:Georgia,serif;font-style:italic;color:rgba(201,169,106,.4);font-size:14px;">Célébrer. Connecter. Élever. Distinguer.</p>
+      <p style="color:rgba(248,245,242,.2);font-size:11px;margin-top:12px;">© 2026 Méta'Morph'Ose · Prélia APEDO AHONON</p>
+    </div>
+  </div>
+</body>
+</html>
+"""
+
+    if reservation.email:
+        try:
+            from django.core.mail import EmailMultiAlternatives
+            msg = EmailMultiAlternatives(
+                subject="Méta'Morph'Ose · Confirmation Brunch des Métamorphosées 2026",
+                body=f"Bravo {reservation.prenom}, ton paiement de {montant_str} pour le {pass_label} a été déclaré. Prélia te contactera pour confirmer.",
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[reservation.email],
+            )
+            msg.attach_alternative(email_html, "text/html")
+            msg.send(fail_silently=True)
+        except Exception as e:
+            logger.warning(f"Email brunch confirmation non envoyé : {e}")
+
+    try:
+        admin_email = settings.ADMIN_EMAIL or settings.EMAIL_HOST_USER
+        if admin_email:
+            send_mail(
+                subject=f"[MMO Brunch] {reservation.prenom} {reservation.nom} · {pass_label}",
+                message=f"Nouvelle réservation Brunch :\n{reservation.prenom} {reservation.nom}\n{reservation.email}\n{reservation.whatsapp}\nPass: {pass_label}\nMontant: {montant_str}",
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[admin_email],
+                fail_silently=True,
+            )
+    except Exception as e:
+        logger.warning(f"Email admin brunch non envoyé : {e}")
+
+    return Response({
+        "detail":       "Paiement déclaré.",
+        "prenom":       reservation.prenom,
+        "pass_label":   pass_label,
+        "montant":      montant_str,
+        "wa_groupe":    wa_groupe,
+    }, status=200)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def verifier_token_brunch(request):
+    """Vérifier qu'un token de succès est valide et retourner les infos."""
+    from contenu.models import ReservationBrunch, SiteConfig
+    token = request.GET.get("token", "")
+    if not token:
+        return Response({"valid": False}, status=400)
+    try:
+        r = ReservationBrunch.objects.get(token_succes=token)
+        wa_groupe = ""
+        try:
+            cfg = SiteConfig.objects.filter(cle="brunch_whatsapp_groupe").first()
+            if cfg: wa_groupe = cfg.valeur
+        except Exception:
+            pass
+        return Response({
+            "valid":      True,
+            "prenom":     r.prenom,
+            "pass_label": r.get_type_pass_display(),
+            "statut":     r.statut,
+            "wa_groupe":  wa_groupe,
+        })
+    except ReservationBrunch.DoesNotExist:
+        return Response({"valid": False}, status=404)
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def confirmer_brunch(request):
+    """Appelée quand le participant déclare avoir payé le Brunch."""
+    from django.utils import timezone
+    from django.core.mail import EmailMultiAlternatives
+
+    data     = request.data
+    prenom   = data.get("prenom", "")
+    nom      = data.get("nom", "")
+    email    = data.get("email", "")
+    telephone= data.get("telephone", "")
+    statut   = data.get("statut", "")
+    montant  = data.get("montant", 0)
+    date_str = timezone.now().strftime("%d/%m/%Y à %Hh%M")
+    montant_str = f"{int(montant):,}".replace(",", " ") + " FCFA"
+    statut_label = "Métamorphosée" if statut == "metamorphosee" else "Participante extérieure"
+
+    email_html = f"""
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"><title>Confirmation Brunch — Méta'Morph'Ose</title></head>
+<body style="margin:0;padding:0;background:#0A0A0A;font-family:Arial,sans-serif;">
+  <div style="max-width:600px;margin:0 auto;padding:40px 20px;">
+    <div style="text-align:center;margin-bottom:32px;">
+      <h1 style="font-family:Georgia,serif;font-size:26px;color:#F8F5F2;font-weight:400;">
+        Méta'<span style="color:#C9A96A;">Morph'</span><span style="color:#C2185B;">Ose</span>
+      </h1>
+      <p style="color:rgba(248,245,242,.4);font-size:11px;letter-spacing:3px;text-transform:uppercase;">Brunch Métamorphose</p>
+    </div>
+    <div style="background:#111;border:1px solid rgba(201,169,106,.2);border-radius:8px;padding:36px;">
+      <div style="text-align:center;margin-bottom:28px;">
+        <div style="width:60px;height:60px;border-radius:50%;background:rgba(76,175,80,.1);border:2px solid #4CAF50;display:inline-flex;align-items:center;justify-content:center;font-size:26px;">✓</div>
+      </div>
+      <h2 style="font-family:Georgia,serif;font-size:20px;color:#F8F5F2;text-align:center;margin:0 0 6px;">Place réservée !</h2>
+      <p style="color:rgba(248,245,242,.5);text-align:center;font-size:13px;margin:0 0 28px;">Bonjour {prenom}, votre paiement a été déclaré.</p>
+      <table style="width:100%;border-collapse:collapse;">
+        <tr><td style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05);color:rgba(248,245,242,.4);font-size:13px;">Nom</td><td style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05);color:#F8F5F2;text-align:right;font-size:13px;">{prenom} {nom}</td></tr>
+        <tr><td style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05);color:rgba(248,245,242,.4);font-size:13px;">Statut</td><td style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05);color:#C9A96A;text-align:right;font-size:13px;">{statut_label}</td></tr>
+        <tr><td style="padding:10px 0;color:rgba(248,245,242,.4);font-size:13px;">Montant</td><td style="padding:10px 0;color:#C9A96A;text-align:right;font-size:18px;font-weight:700;">{montant_str}</td></tr>
+        <tr><td style="padding:6px 0 0;color:rgba(248,245,242,.4);font-size:12px;">Date</td><td style="padding:6px 0 0;color:rgba(248,245,242,.5);text-align:right;font-size:12px;">{date_str}</td></tr>
+      </table>
+      <div style="margin-top:24px;padding:16px;background:rgba(201,169,106,.06);border-radius:4px;border:1px solid rgba(201,169,106,.15);">
+        <p style="color:rgba(248,245,242,.6);font-size:13px;line-height:1.8;margin:0;">
+          Prélia vous contactera pour confirmer les détails de l'événement. À très bientôt !
+        </p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+"""
+
+    if email:
+        try:
+            msg = EmailMultiAlternatives(
+                subject="Méta'Morph'Ose · Confirmation Brunch",
+                body=f"Bonjour {prenom}, votre place au Brunch est confirmée. Montant déclaré : {montant_str}.",
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[email],
+            )
+            msg.attach_alternative(email_html, "text/html")
+            msg.send(fail_silently=True)
+        except Exception as e:
+            logger.warning(f"Email brunch non envoyé : {e}")
+
+    try:
+        admin_email = settings.ADMIN_EMAIL or settings.EMAIL_HOST_USER
+        if admin_email:
+            send_mail(
+                subject=f"[MMO] Brunch — {prenom} {nom} · {statut_label} · {montant_str}",
+                message=f"Nouveau participant Brunch:\n{prenom} {nom}\n{email}\n{telephone}\nStatut: {statut_label}\nMontant: {montant_str}",
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[admin_email],
+                fail_silently=True,
+            )
+    except Exception as e:
+        logger.warning(f"Email admin brunch non envoyé : {e}")
+
+    return Response({"detail": "Inscription Brunch confirmée."}, status=201)
+
+
 @api_view(["PATCH"])
 @permission_classes([IsAuthenticated])
 def update_profile(request):

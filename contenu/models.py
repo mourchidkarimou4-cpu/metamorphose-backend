@@ -54,3 +54,39 @@ class Abonne(models.Model):
 
     def __str__(self):
         return f"{self.email} — {'actif' if self.actif else 'désabonné'}"
+
+class ReservationBrunch(models.Model):
+    PASS_CHOICES = [
+        ('metamorphosee', 'Pass Métamorphosée — 50 000 FCFA'),
+        ('decouverte',    'Pass Découverte — 30 000 FCFA'),
+        ('vip',           'Pass VIP — 60 000 FCFA'),
+    ]
+    STATUT_CHOICES = [
+        ('en_attente',  'En attente de paiement'),
+        ('paye',        'Paiement déclaré'),
+        ('confirme',    'Confirmé par Prélia'),
+        ('annule',      'Annulé'),
+    ]
+    prenom          = models.CharField(max_length=60)
+    nom             = models.CharField(max_length=60)
+    email           = models.EmailField()
+    whatsapp        = models.CharField(max_length=30)
+    type_pass       = models.CharField(max_length=20, choices=PASS_CHOICES)
+    montant         = models.IntegerField(default=0)
+    statut          = models.CharField(max_length=20, choices=STATUT_CHOICES, default='en_attente')
+    token_succes    = models.CharField(max_length=64, unique=True, blank=True)
+    created_at      = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Réservation Brunch'
+        verbose_name_plural = 'Réservations Brunch'
+
+    def __str__(self):
+        return f"{self.prenom} {self.nom} — {self.get_type_pass_display()} — {self.get_statut_display()}"
+
+    def save(self, *args, **kwargs):
+        if not self.token_succes:
+            import secrets
+            self.token_succes = secrets.token_urlsafe(32)
+        super().save(*args, **kwargs)
