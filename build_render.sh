@@ -19,7 +19,7 @@ FRONTEND_DIR="/tmp/metamorphose-frontend"
 if [ -d "$FRONTEND_DIR" ]; then
   rm -rf "$FRONTEND_DIR"
 fi
-git clone https://github.com/mourchidkarimou4-cpu/metamorphose-frontend.git "$FRONTEND_DIR"
+git clone --depth 1 --branch main https://github.com/mourchidkarimou4-cpu/metamorphose-frontend.git "$FRONTEND_DIR"
 cd "$FRONTEND_DIR"
 npm install
 VITE_API_URL="" npm run build
