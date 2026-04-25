@@ -119,3 +119,52 @@ def admin_reservations(request, pk):
         'telephone': r.telephone,
         'created_at':r.created_at.strftime('%d/%m/%Y %H:%M'),
     } for r in mc.reservations.all()])
+
+
+# ── Témoignages Masterclass ──────────────────────────────────────────────────
+from .models import TemoignageMasterclass
+import cloudinary.uploader
+
+def temoignages_masterclass_liste(request):
+    """GET /api/masterclass/temoignages/ — liste publique"""
+    from django.http import JsonResponse
+    temos = TemoignageMasterclass.objects.filter(actif=True)
+    data = []
+    for t in temos:
+        data.append({
+            "id":     t.id,
+            "prenom": t.prenom,
+            "texte":  t.texte,
+            "photo":  t.photo.url if t.photo else "",
+            "ordre":  t.ordre,
+        })
+    return JsonResponse(data, safe=False)
+
+def temoignages_masterclass_admin(request):
+    """POST /api/masterclass/temoignages/ajouter/ — ajouter"""
+    from django.http import JsonResponse
+    from django.views.decorators.csrf import csrf_exempt
+    if request.method != "POST":
+        return JsonResponse({"error": "Méthode non autorisée"}, status=405)
+    prenom = request.POST.get("prenom", "").strip()
+    texte  = request.POST.get("texte", "").strip()
+    ordre  = request.POST.get("ordre", 0)
+    photo  = request.FILES.get("photo")
+    if not prenom:
+        return JsonResponse({"error": "Prénom requis"}, status=400)
+    t = TemoignageMasterclass(prenom=prenom, texte=texte, ordre=ordre)
+    if photo:
+        result = cloudinary.uploader.upload(photo, folder="metamorphose/masterclass/temoignages")
+        t.photo = result["public_id"]
+    t.save()
+    return JsonResponse({"id": t.id, "prenom": t.prenom, "photo": t.photo.url if t.photo else ""})
+
+def temoignage_masterclass_supprimer(request, pk):
+    """DELETE /api/masterclass/temoignages/<pk>/supprimer/"""
+    from django.http import JsonResponse
+    try:
+        t = TemoignageMasterclass.objects.get(pk=pk)
+        t.delete()
+        return JsonResponse({"status": "ok"})
+    except TemoignageMasterclass.DoesNotExist:
+        return JsonResponse({"error": "Non trouvé"}, status=404)

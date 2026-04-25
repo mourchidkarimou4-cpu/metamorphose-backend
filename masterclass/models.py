@@ -47,3 +47,23 @@ class Reservation(models.Model):
 
     def __str__(self):
         return f"{self.prenom} {self.nom} — {self.masterclass.titre}"
+
+
+class TemoignageMasterclass(models.Model):
+    prenom      = models.CharField(max_length=60)
+    texte       = models.TextField(blank=True)
+    photo       = cloudinary.models.CloudinaryField(
+        'image', folder='metamorphose/masterclass/temoignages',
+        blank=True, null=True
+    )
+    ordre       = models.PositiveIntegerField(default=0)
+    actif       = models.BooleanField(default=True)
+    created_at  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['ordre', '-created_at']
+        verbose_name = "Témoignage Masterclass"
+        verbose_name_plural = "Témoignages Masterclass"
+
+    def __str__(self):
+        return f"{self.prenom} — Masterclass"
