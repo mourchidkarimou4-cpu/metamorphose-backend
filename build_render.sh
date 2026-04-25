@@ -4,7 +4,8 @@ set -e
 echo "=== Installation des dépendances Python ==="
 pip install -r requirements.txt
 
-echo "=== Build du frontend React ==="
+echo "=== Frontend pré-buildé inclus dans le repo ==="
+# Build frontend déjà effectué localement et inclus dans frontend/dist/
 # Installer Node via nvm (disponible sur Render)
 export NVM_DIR="$HOME/.nvm"
 if [ ! -d "$NVM_DIR" ]; then
