@@ -65,6 +65,7 @@ urlpatterns = [
     path('api/', include('notifications.urls')),
     path('api/learning/', include('learning.urls')),
     path('api/tickets/', include('tickets.urls')),
+    path('api/aura/', include('aura.urls')),
     # Fichiers statiques React
     path('manifest.json', serve_manifest),
     re_path(r'^assets/(?P<path>.+)$', lambda req, path: serve_static_file(req, f'assets/{path}')),
