@@ -125,6 +125,7 @@ def admin_reservations(request, pk):
 from .models import TemoignageMasterclass
 import cloudinary.uploader
 
+@csrf_exempt
 def temoignages_masterclass_liste(request):
     """GET /api/masterclass/temoignages/ — liste publique"""
     from django.http import JsonResponse
@@ -140,6 +141,10 @@ def temoignages_masterclass_liste(request):
         })
     return JsonResponse(data, safe=False)
 
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+
+@csrf_exempt
 def temoignages_masterclass_admin(request):
     """POST /api/masterclass/temoignages/ajouter/ — ajouter"""
     from django.http import JsonResponse
@@ -159,6 +164,7 @@ def temoignages_masterclass_admin(request):
     t.save()
     return JsonResponse({"id": t.id, "prenom": t.prenom, "photo": t.photo.url if t.photo else ""})
 
+@csrf_exempt
 def temoignage_masterclass_supprimer(request, pk):
     """DELETE /api/masterclass/temoignages/<pk>/supprimer/"""
     from django.http import JsonResponse
