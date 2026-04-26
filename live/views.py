@@ -4,338 +4,240 @@ from rest_framework.response import Response
 from django.utils import timezone
 from django.conf import settings
 from .models import Salle, Participant, Message
-import uuid
-import requests as http_requests
+import uuid, random, string, os
 
+# ── LiveKit ──────────────────────────────────────────────────────────────────
+from livekit.api import AccessToken, VideoGrants
+
+LIVEKIT_URL        = os.environ.get('LIVEKIT_URL', '')
+LIVEKIT_API_KEY    = os.environ.get('LIVEKIT_API_KEY', '')
+LIVEKIT_API_SECRET = os.environ.get('LIVEKIT_API_SECRET', '')
+
+def generer_token_livekit(room_name, identity, nom, is_host=False):
+    grants = VideoGrants(
+        room_join=True,
+        room=room_name,
+        can_publish=is_host,
+        can_subscribe=True,
+        can_publish_data=is_host,
+    )
+    token = (
+        AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET)
+        .with_identity(identity)
+        .with_name(nom)
+        .with_grants(grants)
+        .to_jwt()
+    )
+    return token
+
+def generer_code():
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+
+# ── CRÉER UNE SALLE ──────────────────────────────────────────────────────────
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def creer_salle(request):
-    code = request.data.get('mot_de_passe', '').strip() or request.data.get('code_acces', '').strip()
+    code = request.data.get('code_acces', '').strip().upper() or generer_code()
+    room_name = f"mmo-{uuid.uuid4().hex[:12]}"
     salle = Salle.objects.create(
-        titre=request.data.get('titre', 'Ma réunion'),
+        titre=request.data.get('titre', 'Masterclass'),
         description=request.data.get('description', ''),
         hote=request.user,
-        code_acces=code.upper() if code else '',
+        code_acces=code,
         mode=request.data.get('mode', 'live'),
         max_participants=request.data.get('max_participants', 1000),
-        lien_zoom=request.data.get('lien_zoom', ''),
+        daily_room_name=room_name,  # on réutilise ce champ pour livekit_room_name
     )
-
-    # Créer la room Daily.co
-    daily_api_key = getattr(settings, 'DAILY_API_KEY', '')
-    daily_room_name = ''
-    if daily_api_key:
-        try:
-            resp = http_requests.post(
-                'https://api.daily.co/v1/rooms',
-                headers={
-                    'Authorization': f'Bearer {daily_api_key}',
-                    'Content-Type': 'application/json',
-                },
-                json={
-                    'name': str(salle.id).replace('-', ''),
-                    'properties': {
-                        'enable_chat': True,
-                        'enable_screenshare': True,
-                        'enable_recording': 'cloud',
-                        'start_video_off': False,
-                        'start_audio_off': False,
-                        'exp': int(timezone.now().timestamp()) + 86400,
-                    }
-                },
-                timeout=10
-            )
-            if resp.status_code in [200, 201]:
-                daily_room_name = resp.json().get('name', '')
-                salle.daily_room_name = daily_room_name
-                salle.save()
-        except Exception:
-            pass
-
-    frontend_url = getattr(settings, 'FRONTEND_URL', 'https://metamorphose-frontend.vercel.app')
-    lien = f"{frontend_url}/meeting/{str(salle.id)}"
+    # Token hôte
+    token = generer_token_livekit(
+        room_name=room_name,
+        identity=str(request.user.id),
+        nom=request.user.get_full_name() or request.user.email,
+        is_host=True
+    )
     return Response({
         'id': str(salle.id),
         'titre': salle.titre,
-        'mode': salle.mode,
         'code_acces': salle.code_acces,
-        'lien': lien,
+        'room_name': room_name,
+        'livekit_url': LIVEKIT_URL,
+        'token': token,
         'statut': salle.statut,
-        'daily_room_name': daily_room_name,
-        'lien_zoom': salle.lien_zoom,
-        'created_at': salle.created_at,
-    }, status=201)
+    })
 
+# ── MES SALLES ───────────────────────────────────────────────────────────────
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def mes_salles(request):
+    salles = Salle.objects.filter(hote=request.user).order_by('-created_at')
+    data = [{
+        'id': str(s.id),
+        'titre': s.titre,
+        'code_acces': s.code_acces,
+        'statut': s.statut,
+        'mode': s.mode,
+        'room_name': s.daily_room_name,
+        'created_at': s.created_at.strftime('%d/%m/%Y %H:%M'),
+        'nb_participants': s.participants.count(),
+    } for s in salles]
+    return Response(data)
+
+# ── SALLES ACTIVES ───────────────────────────────────────────────────────────
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def salles_actives(request):
+    salles = Salle.objects.filter(statut__in=['attente', 'active']).order_by('-created_at')
+    data = [{
+        'id': str(s.id),
+        'titre': s.titre,
+        'description': s.description,
+        'statut': s.statut,
+        'mode': s.mode,
+        'created_at': s.created_at.strftime('%d/%m/%Y %H:%M'),
+    } for s in salles]
+    return Response(data)
+
+# ── INFOS SALLE ──────────────────────────────────────────────────────────────
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def infos_salle(request, room_id):
     try:
         salle = Salle.objects.get(id=room_id)
     except Salle.DoesNotExist:
-        return Response({'detail': 'Salle introuvable.'}, status=404)
+        return Response({'error': 'Salle non trouvée'}, status=404)
     return Response({
         'id': str(salle.id),
         'titre': salle.titre,
-        'mode': salle.mode,
+        'description': salle.description,
         'statut': salle.statut,
-        'hote': salle.hote.first_name or salle.hote.email,
-        'participants': salle.participants.filter(quitte_at__isnull=True).count(),
-        'max_participants': salle.max_participants,
-        'protege': bool(salle.code_acces),
-        'lien_zoom': salle.lien_zoom,
+        'mode': salle.mode,
+        'created_at': salle.created_at.strftime('%d/%m/%Y %H:%M'),
     })
 
+# ── REJOINDRE (HÔTE) ─────────────────────────────────────────────────────────
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def rejoindre_salle(request, room_id):
     try:
         salle = Salle.objects.get(id=room_id)
     except Salle.DoesNotExist:
-        return Response({'detail': 'Salle introuvable.'}, status=404)
-
-    if salle.code_acces and request.data.get('code_acces', '').strip().upper() != salle.code_acces.upper():
-        return Response({'detail': 'Mot de passe incorrect.'}, status=403)
-
-    if salle.statut == 'terminee':
-        return Response({'detail': 'Cette réunion est terminée.'}, status=403)
-
-    nom = request.data.get('nom', 'Anonyme')
-    role = 'participant'
-    if request.user.is_authenticated and str(salle.hote.id) == str(request.user.id):
-        role = 'hote'
-        if salle.statut == 'attente':
-            salle.statut = 'active'
-            salle.started_at = timezone.now()
-            salle.save()
-
-    Participant.objects.create(salle=salle, user=request.user if request.user.is_authenticated else None, nom=nom, role=role)
-
+        return Response({'error': 'Salle non trouvée'}, status=404)
+    is_host = salle.hote == request.user
+    token = generer_token_livekit(
+        room_name=salle.daily_room_name,
+        identity=str(request.user.id),
+        nom=request.user.get_full_name() or request.user.email,
+        is_host=is_host
+    )
     return Response({
-        'id': str(salle.id),
-        'titre': salle.titre,
-        'mode': salle.mode,
-        'role': role,
-        'peer_id': str(uuid.uuid4()),
+        'livekit_url': LIVEKIT_URL,
+        'token': token,
+        'room_name': salle.daily_room_name,
+        'is_host': is_host,
     })
 
+# ── REJOINDRE PUBLIC (email + code) ─────────────────────────────────────────
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def rejoindre_live_public(request, room_id):
+    email = request.data.get('email', '').strip().lower()
+    code  = request.data.get('code', '').strip().upper()
+    nom   = request.data.get('nom', email)
+
+    if not email or not code:
+        return Response({'error': 'Email et code requis'}, status=400)
+
+    try:
+        salle = Salle.objects.get(id=room_id)
+    except Salle.DoesNotExist:
+        return Response({'error': 'Salle non trouvée'}, status=404)
+
+    if salle.code_acces and salle.code_acces.upper() != code:
+        return Response({'error': 'Code incorrect'}, status=403)
+
+    if salle.statut == 'terminee':
+        return Response({'error': 'Ce live est terminé'}, status=403)
+
+    token = generer_token_livekit(
+        room_name=salle.daily_room_name,
+        identity=email,
+        nom=nom,
+        is_host=False
+    )
+
+    Participant.objects.get_or_create(
+        salle=salle,
+        nom=nom,
+        defaults={'role': 'spectateur'}
+    )
+
+    return Response({
+        'livekit_url': LIVEKIT_URL,
+        'token': token,
+        'room_name': salle.daily_room_name,
+        'titre': salle.titre,
+    })
+
+# ── TOKEN LIVEKIT (hôte depuis dashboard) ───────────────────────────────────
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def livekit_token(request, room_id):
+    try:
+        salle = Salle.objects.get(id=room_id)
+    except Salle.DoesNotExist:
+        return Response({'error': 'Salle non trouvée'}, status=404)
+    token = generer_token_livekit(
+        room_name=salle.daily_room_name,
+        identity=str(request.user.id),
+        nom=request.user.get_full_name() or request.user.email,
+        is_host=True
+    )
+    return Response({'token': token, 'livekit_url': LIVEKIT_URL, 'room_name': salle.daily_room_name})
+
+# ── TERMINER SALLE ───────────────────────────────────────────────────────────
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def terminer_salle(request, room_id):
     try:
         salle = Salle.objects.get(id=room_id, hote=request.user)
     except Salle.DoesNotExist:
-        return Response({'detail': 'Salle introuvable ou non autorisé.'}, status=404)
+        return Response({'error': 'Salle non trouvée'}, status=404)
     salle.statut = 'terminee'
     salle.ended_at = timezone.now()
     salle.save()
-    return Response({'detail': 'Réunion terminée.'})
+    return Response({'status': 'terminee'})
 
-@api_view(['GET'])
+# ── MODIFIER SALLE ───────────────────────────────────────────────────────────
+@api_view(['PATCH'])
 @permission_classes([IsAuthenticated])
-def mes_salles(request):
-    salles = Salle.objects.filter(hote=request.user).order_by('-created_at')[:20]
-    return Response([{
-        'id': str(s.id),
-        'titre': s.titre,
-        'mode': s.mode,
-        'statut': s.statut,
-        'created_at': s.created_at,
-        'participants': s.participants.count(),
-    } for s in salles])
+def modifier_salle(request, room_id):
+    try:
+        salle = Salle.objects.get(id=room_id, hote=request.user)
+    except Salle.DoesNotExist:
+        return Response({'error': 'Salle non trouvée'}, status=404)
+    for field in ['titre', 'description', 'statut', 'mode', 'max_participants']:
+        if field in request.data:
+            setattr(salle, field, request.data[field])
+    salle.save()
+    return Response({'status': 'ok'})
 
-@api_view(['GET'])
-@permission_classes([AllowAny])
-def salles_actives(request):
-    """Liste publique des salles en cours ou en attente."""
-    salles = Salle.objects.filter(statut__in=['active', 'attente']).order_by('-created_at')[:20]
-    return Response([{
-        'id': str(s.id),
-        'titre': s.titre,
-        'description': s.description,
-        'mode': s.mode,
-        'statut': s.statut,
-        'hote_nom': s.hote.first_name or s.hote.email,
-        'participants_count': s.participants.filter(quitte_at__isnull=True).count(),
-        'protege': bool(s.code_acces),
-        'lien_zoom': s.lien_zoom,
-        'started_at': s.started_at,
-        'created_at': s.created_at,
-    } for s in salles])
-
-
-# ── Registre PeerJS (via DB) ────────────────────────────────────
-from .models import PeerActif
-
+# ── STUBS (compatibilité) ─────────────────────────────────────────────────────
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def register_peer(request, room_id):
-    peer_id = request.data.get('peer_id')
-    nom = request.data.get('nom', 'Anonyme')
-    if not peer_id:
-        return Response({'detail': 'peer_id requis.'}, status=400)
-    try:
-        salle = Salle.objects.get(id=room_id)
-    except Salle.DoesNotExist:
-        return Response({'detail': 'Salle introuvable.'}, status=404)
-    PeerActif.objects.update_or_create(peer_id=peer_id, defaults={'salle': salle, 'nom': nom})
-    return Response({'ok': True})
+    return Response({'status': 'ok'})
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def list_peers(request, room_id):
-    try:
-        salle = Salle.objects.get(id=room_id)
-    except Salle.DoesNotExist:
-        return Response({'peers': []})
-    peers = PeerActif.objects.filter(salle=salle).values('peer_id', 'nom')
-    return Response({'peers': list(peers)})
+    return Response([])
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def leave_peer(request, room_id):
-    peer_id = request.data.get('peer_id')
-    if not peer_id:
-        return Response({'detail': 'peer_id requis.'}, status=400)
-    PeerActif.objects.filter(peer_id=peer_id).delete()
-    return Response({'ok': True})
+    return Response({'status': 'ok'})
 
-import random, string
-
-def generer_code():
-    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
-
-@api_view(['POST'])
+@api_view(['GET'])
 @permission_classes([AllowAny])
-def rejoindre_live_public(request, room_id):
-    """Accès public au live via email + code."""
-    email = request.data.get('email', '').strip()
-    code  = request.data.get('code', '').strip().upper()
-    if not email or not code:
-        return Response({'detail': 'Email et code requis.'}, status=400)
-    try:
-        salle = Salle.objects.get(id=room_id, statut='active')
-    except Salle.DoesNotExist:
-        return Response({'detail': 'Live introuvable ou terminé.'}, status=404)
-    if salle.code_acces and salle.code_acces.upper() != code:
-        return Response({'detail': 'Code incorrect.'}, status=403)
-    # Enregistrer le participant
-    Participant.objects.get_or_create(
-        salle=salle, nom=email,
-        defaults={'role': 'spectateur'}
-    )
-    return Response({
-        'room_id': str(salle.id),
-        'titre':   salle.titre,
-        'email':   email,
-    })
-
-
-
-@api_view(['PATCH'])
-@permission_classes([IsAuthenticated])
-def modifier_salle(request, room_id):
-    """Modifier une salle — notamment le lien Zoom."""
-    try:
-        salle = Salle.objects.get(id=room_id, hote=request.user)
-    except Salle.DoesNotExist:
-        return Response({'detail': 'Salle introuvable.'}, status=404)
-
-    for field in ['titre', 'description', 'lien_zoom', 'code_acces', 'mode']:
-        if field in request.data:
-            setattr(salle, field, request.data[field])
-    salle.save()
-    return Response({
-        'id': str(salle.id),
-        'titre': salle.titre,
-        'lien_zoom': salle.lien_zoom,
-        'statut': salle.statut,
-    })
-
-# ── Daily.co — Générer token de meeting ───────────────────────────
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
 def daily_token(request, room_id):
-    """Génère un token Daily.co pour rejoindre une salle."""
-    try:
-        salle = Salle.objects.get(id=room_id)
-    except Salle.DoesNotExist:
-        return Response({'detail': 'Salle introuvable.'}, status=404)
-
-    daily_api_key = getattr(settings, 'DAILY_API_KEY', '')
-    if not daily_api_key:
-        return Response({'detail': 'Daily.co non configuré.'}, status=500)
-
-    is_owner = salle.hote == request.user
-    is_admin = request.user.is_staff
-
-    try:
-        room_name = salle.daily_room_name or str(salle.id).replace('-', '')
-
-        # Créer la room Daily si elle n'existe pas encore
-        if not salle.daily_room_name:
-            create_resp = http_requests.post(
-                'https://api.daily.co/v1/rooms',
-                headers={
-                    'Authorization': f'Bearer {daily_api_key}',
-                    'Content-Type': 'application/json',
-                },
-                json={
-                    'name': room_name,
-                    'properties': {
-                        'enable_chat': True,
-                        'enable_screenshare': True,
-                        'exp': int(timezone.now().timestamp()) + 86400,
-                    }
-                },
-                timeout=10
-            )
-            if create_resp.status_code in [200, 201]:
-                room_name = create_resp.json().get('name', room_name)
-                salle.daily_room_name = room_name
-                salle.save()
-
-        # Générer le token de meeting
-        resp = http_requests.post(
-            'https://api.daily.co/v1/meeting-tokens',
-            headers={
-                'Authorization': f'Bearer {daily_api_key}',
-                'Content-Type': 'application/json',
-            },
-            json={
-                'properties': {
-                    'room_name': room_name,
-                    'user_name': request.user.first_name or request.user.email,
-                    'is_owner': is_owner or is_admin,
-
-                    'start_video_off': False,
-                    'start_audio_off': False,
-                    'exp': int(timezone.now().timestamp()) + 7200,
-                }
-            },
-            timeout=10
-        )
-        if resp.status_code in [200, 201]:
-            token = resp.json().get('token', '')
-            room_url = f"https://masterclass-ose-live.daily.co/{room_name}"
-            return Response({
-                'token': token,
-                'room_url': room_url,
-                'room_name': room_name,
-                'is_owner': is_owner or is_admin,
-            })
-        return Response({'detail': f'Erreur Daily.co: {resp.text}'}, status=500)
-    except Exception as e:
-        return Response({'detail': str(e)}, status=500)
-
-
-@api_view(['PATCH'])
-@permission_classes([IsAuthenticated])
-def maj_lien_zoom(request, room_id):
-    """Mettre à jour le lien Zoom d'une salle."""
-    try:
-        salle = Salle.objects.get(id=room_id, hote=request.user)
-    except Salle.DoesNotExist:
-        return Response({'detail': 'Salle introuvable.'}, status=404)
-    salle.lien_zoom = request.data.get('lien_zoom', '')
-    salle.save()
-    return Response({'lien_zoom': salle.lien_zoom})
+    return Response({'error': 'Daily.co remplacé par LiveKit'}, status=410)

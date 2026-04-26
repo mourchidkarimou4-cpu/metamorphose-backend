@@ -12,5 +12,6 @@ urlpatterns = [
     path('<str:room_id>/terminer/',          views.terminer_salle),
     path('<str:room_id>/rejoindre-public/',  views.rejoindre_live_public),
     path('<str:room_id>/daily-token/',         views.daily_token),
+    path('<str:room_id>/livekit-token/',       views.livekit_token),
     path('<str:room_id>/modifier/',             views.modifier_salle),
 ]

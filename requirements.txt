@@ -46,3 +46,5 @@ urllib3==2.6.3
 whitenoise==6.12.0
 zope.interface==8.3
 openai>=1.0.0
+livekit
+livekit-api
