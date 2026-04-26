@@ -141,9 +141,6 @@ def temoignages_masterclass_liste(request):
         })
     return JsonResponse(data, safe=False)
 
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods
-
 @csrf_exempt
 def temoignages_masterclass_admin(request):
     """POST /api/masterclass/temoignages/ajouter/ — ajouter"""
