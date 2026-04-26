@@ -154,12 +154,17 @@ def temoignages_masterclass_admin(request):
     photo  = request.FILES.get("photo")
     if not prenom:
         return JsonResponse({"error": "Prénom requis"}, status=400)
-    t = TemoignageMasterclass(prenom=prenom, texte=texte, ordre=ordre)
-    if photo:
-        result = cloudinary.uploader.upload(photo, folder="metamorphose/masterclass/temoignages")
-        t.photo = result["public_id"]
-    t.save()
-    return JsonResponse({"id": t.id, "prenom": t.prenom, "photo": t.photo.url if t.photo else ""})
+    from django.http import JsonResponse as JR
+    try:
+        t = TemoignageMasterclass(prenom=prenom, texte=texte, ordre=ordre)
+        if photo:
+            result = cloudinary.uploader.upload(photo, folder="metamorphose/masterclass/temoignages")
+            t.photo = result["public_id"]
+        t.save()
+        return JsonResponse({"id": t.id, "prenom": t.prenom, "photo": t.photo.url if t.photo else ""})
+    except Exception as e:
+        import traceback
+        return JsonResponse({"error": str(e), "trace": traceback.format_exc()}, status=500)
 
 @csrf_exempt
 def temoignage_masterclass_supprimer(request, pk):
