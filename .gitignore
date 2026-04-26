@@ -25,3 +25,4 @@ Thumbs.db
 # Ajouts audit sécurité
 *.swp
 *.swo
+frontend/dist/
