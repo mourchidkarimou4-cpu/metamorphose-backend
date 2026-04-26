@@ -161,7 +161,8 @@ def temoignages_masterclass_admin(request):
             result = cloudinary.uploader.upload(photo, folder="metamorphose/masterclass/temoignages")
             t.photo = result["public_id"]
         t.save()
-        return JsonResponse({"id": t.id, "prenom": t.prenom, "photo": t.photo.url if t.photo else ""})
+        photo_url = t.photo.url if hasattr(t.photo, "url") else (f"https://res.cloudinary.com/dp7v6vlgs/image/upload/{t.photo}" if t.photo else "")
+        return JsonResponse({"id": t.id, "prenom": t.prenom, "photo": photo_url})
     except Exception as e:
         import traceback
         return JsonResponse({"error": str(e), "trace": traceback.format_exc()}, status=500)
