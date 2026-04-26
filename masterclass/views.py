@@ -1,3 +1,4 @@
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
@@ -145,7 +146,6 @@ def temoignages_masterclass_liste(request):
 def temoignages_masterclass_admin(request):
     """POST /api/masterclass/temoignages/ajouter/ — ajouter"""
     from django.http import JsonResponse
-    from django.views.decorators.csrf import csrf_exempt
     if request.method != "POST":
         return JsonResponse({"error": "Méthode non autorisée"}, status=405)
     prenom = request.POST.get("prenom", "").strip()
