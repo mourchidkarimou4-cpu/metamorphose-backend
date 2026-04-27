@@ -15,6 +15,8 @@ ZOOM_S2S_CLIENT_ID     = os.environ.get('ZOOM_S2S_CLIENT_ID', '')
 ZOOM_S2S_CLIENT_SECRET = os.environ.get('ZOOM_S2S_CLIENT_SECRET', '')
 ZOOM_SDK_CLIENT_ID = os.environ.get('ZOOM_SDK_CLIENT_ID', '')
 ZOOM_SDK_SECRET    = os.environ.get('ZOOM_SDK_SECRET', '')
+ZOOM_SDK_CLIENT_ID = os.environ.get('ZOOM_SDK_CLIENT_ID', '')
+ZOOM_SDK_SECRET    = os.environ.get('ZOOM_SDK_SECRET', '')
 
 def get_zoom_token():
     """Obtenir un token OAuth Zoom Server-to-Server"""
