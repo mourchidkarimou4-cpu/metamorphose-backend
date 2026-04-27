@@ -11,12 +11,14 @@ from django.utils import timezone
 from .models import ReunionZoom
 
 ZOOM_ACCOUNT_ID    = os.environ.get('ZOOM_ACCOUNT_ID', '')
-ZOOM_CLIENT_ID     = os.environ.get('ZOOM_CLIENT_ID', '')
-ZOOM_CLIENT_SECRET = os.environ.get('ZOOM_CLIENT_SECRET', '')
+ZOOM_S2S_CLIENT_ID     = os.environ.get('ZOOM_S2S_CLIENT_ID', '')
+ZOOM_S2S_CLIENT_SECRET = os.environ.get('ZOOM_S2S_CLIENT_SECRET', '')
+ZOOM_SDK_KEY       = os.environ.get('ZOOM_SDK_KEY', '')
+ZOOM_SDK_SECRET    = os.environ.get('ZOOM_SDK_SECRET', '')
 
 def get_zoom_token():
     """Obtenir un token OAuth Zoom Server-to-Server"""
-    credentials = base64.b64encode(f"{ZOOM_CLIENT_ID}:{ZOOM_CLIENT_SECRET}".encode()).decode()
+    credentials = base64.b64encode(f"{ZOOM_S2S_CLIENT_ID}:{ZOOM_S2S_CLIENT_SECRET}".encode()).decode()
     response = http_requests.post(
         f"https://zoom.us/oauth/token?grant_type=account_credentials&account_id={ZOOM_ACCOUNT_ID}",
         headers={"Authorization": f"Basic {credentials}"}
@@ -35,8 +37,8 @@ def generer_signature(meeting_number, role):
 
     payload = base64.urlsafe_b64encode(
         json.dumps({
-            "sdkKey": ZOOM_CLIENT_ID,
-            "appKey": ZOOM_CLIENT_ID,
+            "sdkKey": ZOOM_SDK_KEY,
+            "appKey": ZOOM_SDK_KEY,
             "mn": str(meeting_number),
             "role": role,
             "iat": iat,
@@ -47,7 +49,7 @@ def generer_signature(meeting_number, role):
 
     msg = f"{header}.{payload}"
     signature = hmac.new(
-        ZOOM_CLIENT_SECRET.encode(),
+        ZOOM_SDK_SECRET.encode(),
         msg.encode(),
         hashlib.sha256
     ).digest()
