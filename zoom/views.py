@@ -122,7 +122,7 @@ def get_signature(request):
     signature = generer_signature(meeting_number, role)
     return Response({
         'signature': signature,
-        'sdk_key': ZOOM_SDK_KEY,
+        'sdk_key': ZOOM_SDK_CLIENT_ID,
     })
 
 # ── LISTE RÉUNIONS ───────────────────────────────────────────────────────────
