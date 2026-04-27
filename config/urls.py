@@ -50,6 +50,7 @@ def serve_manifest(request):
 
 urlpatterns = [
     path('api/live/', include('live.urls')),
+    path('api/zoom/', include('zoom.urls')),
     path('api/evenements/', include('evenements.urls')),
     path('api/communaute/', include('communaute.urls')),
     path('api/acces/', include('acces.urls')),

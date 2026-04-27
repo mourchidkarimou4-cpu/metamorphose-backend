@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     'cloudinary',
     'channels',
     'live',
+    'zoom',
     'evenements',
     'communaute',
     'acces',
