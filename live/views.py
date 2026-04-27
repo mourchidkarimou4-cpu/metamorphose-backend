@@ -6,30 +6,6 @@ from django.conf import settings
 from .models import Salle, Participant, Message
 import uuid, random, string, os
 
-# ── LiveKit ──────────────────────────────────────────────────────────────────
-from livekit.api import AccessToken, VideoGrants
-
-LIVEKIT_URL        = os.environ.get('LIVEKIT_URL', '')
-LIVEKIT_API_KEY    = os.environ.get('LIVEKIT_API_KEY', '')
-LIVEKIT_API_SECRET = os.environ.get('LIVEKIT_API_SECRET', '')
-
-def generer_token_livekit(room_name, identity, nom, is_host=False):
-    grants = VideoGrants(
-        room_join=True,
-        room=room_name,
-        can_publish=is_host,
-        can_subscribe=True,
-        can_publish_data=is_host,
-    )
-    token = (
-        AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET)
-        .with_identity(identity)
-        .with_name(nom)
-        .with_grants(grants)
-        .to_jwt()
-    )
-    return token
-
 def generer_code():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
