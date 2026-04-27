@@ -24,13 +24,35 @@ def get_zoom_token():
     return response.json().get('access_token', '')
 
 def generer_signature(meeting_number, role):
-    """Générer la signature SDK Zoom v2 (role=0 participant, role=1 hôte)"""
-    ts = int(time.time()) - 30
-    msg = f"{ZOOM_CLIENT_ID}{meeting_number}{ts}{role}"
-    hash_bytes = hmac.new(ZOOM_CLIENT_SECRET.encode(), msg.encode(), hashlib.sha256).digest()
-    hash_b64 = base64.b64encode(hash_bytes).decode().rstrip('=')
-    raw = f"{ZOOM_CLIENT_ID}.{meeting_number}.{ts}.{role}.{hash_b64}"
-    return base64.b64encode(raw.encode()).decode()
+    """Générer la signature JWT pour le SDK Zoom Meeting"""
+    import json
+    iat = int(time.time()) - 30
+    exp = iat + 60 * 60 * 2  # 2 heures
+
+    header = base64.urlsafe_b64encode(
+        json.dumps({"alg": "HS256", "typ": "JWT"}).encode()
+    ).decode().rstrip('=')
+
+    payload = base64.urlsafe_b64encode(
+        json.dumps({
+            "sdkKey": ZOOM_CLIENT_ID,
+            "appKey": ZOOM_CLIENT_ID,
+            "mn": str(meeting_number),
+            "role": role,
+            "iat": iat,
+            "exp": exp,
+            "tokenExp": exp
+        }).encode()
+    ).decode().rstrip('=')
+
+    msg = f"{header}.{payload}"
+    signature = hmac.new(
+        ZOOM_CLIENT_SECRET.encode(),
+        msg.encode(),
+        hashlib.sha256
+    ).digest()
+    sig_b64 = base64.urlsafe_b64encode(signature).decode().rstrip('=')
+    return f"{msg}.{sig_b64}" 
 
 # ── CRÉER UNE RÉUNION ────────────────────────────────────────────────────────
 @api_view(['POST'])
