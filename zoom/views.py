@@ -30,8 +30,8 @@ def generer_signature(meeting_number, role):
     exp = iat + 60 * 60 * 2
 
     payload = {
-        "appKey": ZOOM_SDK_CLIENT_ID,
-        "sdkKey": ZOOM_SDK_CLIENT_ID,
+        "appKey": ZOOM_S2S_CLIENT_ID,
+        "sdkKey": ZOOM_S2S_CLIENT_ID,
         "mn": str(meeting_number),
         "role": int(role),
         "iat": iat,
