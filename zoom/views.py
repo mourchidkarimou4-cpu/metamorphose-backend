@@ -30,7 +30,7 @@ def generer_signature(meeting_number, role):
     exp = iat + 60 * 60 * 2  # 2 heures
 
     header = base64.urlsafe_b64encode(
-        json.dumps({"alg": "HS256", "typ": "JWT"}).encode()
+        json.dumps({"alg": "HS256", "typ": "JWT"}, separators=(',', ':')).encode()
     ).decode().rstrip('=')
 
     payload = base64.urlsafe_b64encode(
@@ -42,7 +42,7 @@ def generer_signature(meeting_number, role):
             "iat": iat,
             "exp": exp,
             "tokenExp": exp
-        }).encode()
+        }, separators=(',', ':')).encode()
     ).decode().rstrip('=')
 
     msg = f"{header}.{payload}"
