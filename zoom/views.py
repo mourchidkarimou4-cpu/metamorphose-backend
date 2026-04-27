@@ -24,12 +24,13 @@ def get_zoom_token():
     return response.json().get('access_token', '')
 
 def generer_signature(meeting_number, role):
-    """Générer la signature SDK Zoom (role=0 participant, role=1 hôte)"""
+    """Générer la signature SDK Zoom v2 (role=0 participant, role=1 hôte)"""
     ts = int(time.time()) - 30
     msg = f"{ZOOM_CLIENT_ID}{meeting_number}{ts}{role}"
     hash_bytes = hmac.new(ZOOM_CLIENT_SECRET.encode(), msg.encode(), hashlib.sha256).digest()
-    hash_b64 = base64.b64encode(hash_bytes).decode()
-    return base64.b64encode(f"{ZOOM_CLIENT_ID}.{meeting_number}.{ts}.{role}.{hash_b64}".encode()).decode()
+    hash_b64 = base64.b64encode(hash_bytes).decode().rstrip('=')
+    raw = f"{ZOOM_CLIENT_ID}.{meeting_number}.{ts}.{role}.{hash_b64}"
+    return base64.b64encode(raw.encode()).decode()
 
 # ── CRÉER UNE RÉUNION ────────────────────────────────────────────────────────
 @api_view(['POST'])
