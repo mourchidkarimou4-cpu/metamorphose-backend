@@ -13,7 +13,7 @@ from .models import ReunionZoom
 ZOOM_ACCOUNT_ID    = os.environ.get('ZOOM_ACCOUNT_ID', '')
 ZOOM_S2S_CLIENT_ID     = os.environ.get('ZOOM_S2S_CLIENT_ID', '')
 ZOOM_S2S_CLIENT_SECRET = os.environ.get('ZOOM_S2S_CLIENT_SECRET', '')
-ZOOM_SDK_KEY       = os.environ.get('ZOOM_SDK_KEY', '')
+ZOOM_SDK_CLIENT_ID = os.environ.get('ZOOM_SDK_CLIENT_ID', '')
 ZOOM_SDK_SECRET    = os.environ.get('ZOOM_SDK_SECRET', '')
 
 def get_zoom_token():
@@ -26,35 +26,25 @@ def get_zoom_token():
     return response.json().get('access_token', '')
 
 def generer_signature(meeting_number, role):
-    """Générer la signature JWT pour le SDK Zoom Meeting"""
-    import json
+    """Générer la signature JWT pour le SDK Zoom Meeting via PyJWT"""
+    import jwt
     iat = int(time.time()) - 30
-    exp = iat + 60 * 60 * 2  # 2 heures
+    exp = iat + 60 * 60 * 2
 
-    header = base64.urlsafe_b64encode(
-        json.dumps({"alg": "HS256", "typ": "JWT"}, separators=(',', ':')).encode()
-    ).decode().rstrip('=')
+    payload = {
+        "appKey": ZOOM_SDK_CLIENT_ID,
+        "sdkKey": ZOOM_SDK_CLIENT_ID,
+        "mn": str(meeting_number),
+        "role": int(role),
+        "iat": iat,
+        "exp": exp,
+        "tokenExp": exp
+    }
 
-    payload = base64.urlsafe_b64encode(
-        json.dumps({
-            "sdkKey": ZOOM_SDK_KEY,
-            "appKey": ZOOM_SDK_KEY,
-            "mn": str(meeting_number),
-            "role": role,
-            "iat": iat,
-            "exp": exp,
-            "tokenExp": exp
-        }, separators=(',', ':')).encode()
-    ).decode().rstrip('=')
-
-    msg = f"{header}.{payload}"
-    signature = hmac.new(
-        ZOOM_SDK_SECRET.encode(),
-        msg.encode(),
-        hashlib.sha256
-    ).digest()
-    sig_b64 = base64.urlsafe_b64encode(signature).decode().rstrip('=')
-    return f"{msg}.{sig_b64}" 
+    signature = jwt.encode(payload, ZOOM_SDK_SECRET, algorithm="HS256")
+    if isinstance(signature, bytes):
+        return signature.decode('utf-8')
+    return signature
 
 # ── CRÉER UNE RÉUNION ────────────────────────────────────────────────────────
 @api_view(['POST'])
