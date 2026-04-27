@@ -13,10 +13,6 @@ from .models import ReunionZoom
 ZOOM_ACCOUNT_ID    = os.environ.get('ZOOM_ACCOUNT_ID', '')
 ZOOM_S2S_CLIENT_ID     = os.environ.get('ZOOM_S2S_CLIENT_ID', '')
 ZOOM_S2S_CLIENT_SECRET = os.environ.get('ZOOM_S2S_CLIENT_SECRET', '')
-ZOOM_SDK_CLIENT_ID = os.environ.get('ZOOM_SDK_CLIENT_ID', '')
-ZOOM_SDK_SECRET    = os.environ.get('ZOOM_SDK_SECRET', '')
-ZOOM_SDK_CLIENT_ID = os.environ.get('ZOOM_SDK_CLIENT_ID', '')
-ZOOM_SDK_SECRET    = os.environ.get('ZOOM_SDK_SECRET', '')
 
 def get_zoom_token():
     """Obtenir un token OAuth Zoom Server-to-Server"""
@@ -43,7 +39,7 @@ def generer_signature(meeting_number, role):
         "tokenExp": exp
     }
 
-    signature = jwt.encode(payload, ZOOM_SDK_SECRET, algorithm="HS256")
+    signature = jwt.encode(payload, ZOOM_S2S_CLIENT_SECRET, algorithm="HS256")
     if isinstance(signature, bytes):
         return signature.decode('utf-8')
     return signature
@@ -124,7 +120,7 @@ def get_signature(request):
     signature = generer_signature(meeting_number, role)
     return Response({
         'signature': signature,
-        'sdk_key': ZOOM_SDK_CLIENT_ID,
+        'sdk_key': ZOOM_S2S_CLIENT_ID,
     })
 
 # ── LISTE RÉUNIONS ───────────────────────────────────────────────────────────
