@@ -12,5 +12,5 @@ urlpatterns = [
     path('profil/',                   views.profil_communaute),
     path('admin/cles/',               views.liste_cles),
     path('admin/cles/generer/',       views.generer_cle),
-    path('admin/cles/<int:pk>/toggle/', views.toggle_cle),
+    path('admin/cles/<str:pk>/toggle/', views.toggle_cle),
 ]

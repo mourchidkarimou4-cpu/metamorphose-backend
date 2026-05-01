@@ -75,3 +75,26 @@ class ProfilCommunaute(models.Model):
 
     def __str__(self):
         return f"Profil — {self.utilisatrice.email}"
+
+class CleAccesEmail(models.Model):
+    """Clé d'accès pour un email sans compte membre."""
+    email    = models.EmailField(unique=True, db_index=True)
+    cle      = models.CharField(max_length=32, unique=True)
+    active   = models.BooleanField(default=True)
+    creee_le = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Clé accès email externe"
+
+    def __str__(self):
+        return f"{self.email} — {self.cle}"
+
+    @classmethod
+    def generer(cls, email):
+        from django.utils.crypto import get_random_string
+        cle = get_random_string(32)
+        obj, _ = cls.objects.update_or_create(
+            email=email,
+            defaults={'cle': cle, 'active': True}
+        )
+        return obj

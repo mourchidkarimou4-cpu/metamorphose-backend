@@ -36,28 +36,36 @@ def com_data(c, request_user=None):
 
 # ── ACCÈS ────────────────────────────────────────────────────────
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def valider_cle(request):
-    cle = request.data.get('cle', '').strip()
-    if not cle:
-        return Response({'detail': 'Clé requise.'}, status=400)
+    from .models import CleAccesEmail
+    email = request.data.get('email', '').strip()
+    cle   = request.data.get('cle', '').strip()
+    if not email or not cle:
+        return Response({'detail': 'Email et clé requis.'}, status=400)
+
+    # Vérifier dans CleAcces (membres inscrits)
     try:
-        acces = CleAcces.objects.get(cle=cle, active=True)
-    except CleAcces.DoesNotExist:
-        return Response({'detail': 'Clé invalide ou expirée.'}, status=403)
+        user  = User.objects.get(email=email)
+        acces = CleAcces.objects.get(utilisatrice=user, cle=cle, active=True)
+        if acces.premiere_connexion:
+            acces.premiere_connexion = False
+            acces.utilisee_le = timezone.now()
+            acces.save()
+            ProfilCommunaute.objects.get_or_create(utilisatrice=user)
+        return Response({'acces': True})
+    except (User.DoesNotExist, CleAcces.DoesNotExist):
+        pass
 
-    if acces.utilisatrice.id != request.user.id:
-        return Response({'detail': 'Cette clé ne vous appartient pas.'}, status=403)
+    # Vérifier dans CleAccesEmail (emails externes)
+    try:
+        acces = CleAccesEmail.objects.get(email=email, cle=cle, active=True)
+        return Response({'acces': True})
+    except CleAccesEmail.DoesNotExist:
+        pass
 
-    premiere = acces.premiere_connexion
-    if premiere:
-        acces.premiere_connexion = False
-        acces.utilisee_le = timezone.now()
-        acces.save()
-        # Créer profil communauté si absent
-        ProfilCommunaute.objects.get_or_create(utilisatrice=request.user)
+    return Response({'acces': False, 'detail': 'Email ou clé incorrects.'}, status=403)
 
-    return Response({'acces': True, 'premiere_connexion': premiere})
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -73,36 +81,75 @@ def verifier_acces(request):
 @api_view(['POST'])
 @permission_classes([IsAdminUser])
 def generer_cle(request):
+    from .models import CleAccesEmail
     email = request.data.get('email', '').strip()
+    if not email:
+        return Response({'detail': 'Email requis.'}, status=400)
+    # Essayer d'abord avec un compte membre existant
     try:
         user = User.objects.get(email=email)
+        acces = CleAcces.generer(user)
+        return Response({'cle': acces.cle, 'email': user.email})
     except User.DoesNotExist:
-        return Response({'detail': 'Utilisatrice introuvable.'}, status=404)
-    acces = CleAcces.generer(user)
-    return Response({'cle': acces.cle, 'email': user.email})
+        pass
+    # Sinon générer une clé email externe
+    acces = CleAccesEmail.generer(email)
+    return Response({'cle': acces.cle, 'email': email})
 
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
 def liste_cles(request):
-    cles = CleAcces.objects.select_related('utilisatrice').all().order_by('-creee_le')
-    return Response([{
-        'id': c.id,
-        'email': c.utilisatrice.email,
-        'prenom': c.utilisatrice.first_name,
-        'cle': c.cle,
-        'active': c.active,
+    from .models import CleAccesEmail
+    # Clés membres inscrits
+    cles_membres = CleAcces.objects.select_related('utilisatrice').all().order_by('-creee_le')
+    result = [{
+        'id':               f"m_{c.id}",
+        'email':            c.utilisatrice.email,
+        'prenom':           c.utilisatrice.first_name,
+        'cle':              c.cle,
+        'active':           c.active,
+        'is_active':        c.active,
         'premiere_connexion': c.premiere_connexion,
-        'creee_le': c.creee_le.strftime('%d/%m/%Y'),
-        'utilisee_le': c.utilisee_le.strftime('%d/%m/%Y %H:%M') if c.utilisee_le else '',
-    } for c in cles])
+        'creee_le':         c.creee_le.strftime('%d/%m/%Y'),
+        'utilisee_le':      c.utilisee_le.strftime('%d/%m/%Y %H:%M') if c.utilisee_le else '',
+        'type':             'membre',
+    } for c in cles_membres]
+
+    # Clés emails externes
+    cles_ext = CleAccesEmail.objects.all().order_by('-creee_le')
+    result += [{
+        'id':               f"e_{c.id}",
+        'email':            c.email,
+        'prenom':           '',
+        'cle':              c.cle,
+        'active':           c.active,
+        'is_active':        c.active,
+        'premiere_connexion': True,
+        'creee_le':         c.creee_le.strftime('%d/%m/%Y'),
+        'utilisee_le':      '',
+        'type':             'externe',
+    } for c in cles_ext]
+
+    result.sort(key=lambda x: x['creee_le'], reverse=True)
+    return Response(result)
 
 @api_view(['PATCH'])
 @permission_classes([IsAdminUser])
 def toggle_cle(request, pk):
-    try:
-        acces = CleAcces.objects.get(pk=pk)
-    except CleAcces.DoesNotExist:
-        return Response({'detail': 'Introuvable.'}, status=404)
+    from .models import CleAccesEmail
+    # pk peut être "m_123" (membre) ou "e_123" (externe)
+    if str(pk).startswith('e_'):
+        real_pk = str(pk)[2:]
+        try:
+            acces = CleAccesEmail.objects.get(pk=real_pk)
+        except CleAccesEmail.DoesNotExist:
+            return Response({'detail': 'Introuvable.'}, status=404)
+    else:
+        real_pk = str(pk).replace('m_', '')
+        try:
+            acces = CleAcces.objects.get(pk=real_pk)
+        except CleAcces.DoesNotExist:
+            return Response({'detail': 'Introuvable.'}, status=404)
     acces.active = not acces.active
     acces.save()
     return Response({'active': acces.active})
