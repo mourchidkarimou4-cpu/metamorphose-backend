@@ -479,7 +479,7 @@ def reserver_brunch(request):
     Crée la réservation et retourne le token + lien de paiement.
     """
     from contenu.models import ReservationBrunch
-    from contenu.models import SiteConfig
+    from administration.models import SiteConfig
     from django.utils import timezone
 
     data      = request.data
@@ -535,7 +535,8 @@ def valider_paiement_brunch(request):
     Étape 2 : La cliente déclare avoir payé.
     Marque la réservation comme payée et retourne le lien WhatsApp.
     """
-    from contenu.models import ReservationBrunch, SiteConfig
+    from contenu.models import ReservationBrunch
+    from administration.models import SiteConfig
     from django.core.mail import EmailMultiAlternatives
     from django.utils import timezone
 
@@ -655,7 +656,8 @@ def valider_paiement_brunch(request):
 @permission_classes([AllowAny])
 def verifier_token_brunch(request):
     """Vérifier qu'un token de succès est valide et retourner les infos."""
-    from contenu.models import ReservationBrunch, SiteConfig
+    from contenu.models import ReservationBrunch
+    from administration.models import SiteConfig
     token = request.GET.get("token", "")
     if not token:
         return Response({"valid": False}, status=400)
