@@ -18,6 +18,7 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'aura',
+    'rendezvous',
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
@@ -109,9 +110,9 @@ SIMPLE_JWT = {
 }
 
 # ── CORS ───────────────────────────────────────────────────────
-_cors_env = env_config('CORS_ALLOWED_ORIGINS', default='http://localhost:5173,http://localhost:3000')
-CORS_ALLOWED_ORIGINS = [o.strip() for o in _cors_env.split(',')]
-CORS_ALLOWED_ORIGINS += ['http://10.32.78.12:5173']
+_cors_env = env_config('CORS_ALLOWED_ORIGINS', default='')
+CORS_ALLOWED_ORIGINS = [o.strip() for o in _cors_env.split(',') if o.strip()]
+CORS_ALLOW_ALL_ORIGINS = DEBUG
 CORS_ALLOW_CREDENTIALS = True
 
 # ── FICHIERS STATIQUES & MEDIA ─────────────────────────────────
@@ -169,7 +170,7 @@ else:
     }
 
 # ── EMAIL ──────────────────────────────────────────────────────
-EMAIL_BACKEND       = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_BACKEND       = 'django.core.mail.backends.smtp.EmailBackend' if not DEBUG else 'django.core.mail.backends.console.EmailBackend'
 EMAIL_HOST          = 'smtp.gmail.com'
 EMAIL_PORT          = 587
 EMAIL_USE_TLS       = True
@@ -224,6 +225,7 @@ LOGGING = {
         'paiement':       {'handlers': ['console'], 'level': 'INFO', 'propagate': False},
     },
 }
+
 
 
 
