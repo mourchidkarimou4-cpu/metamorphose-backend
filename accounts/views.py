@@ -733,8 +733,7 @@ def confirmer_brunch(request):
 </body>
 </html>
 """
-
-   def envoyer_emails():
+    def envoyer_emails():
         if email:
             try:
                 msg = EmailMultiAlternatives(
