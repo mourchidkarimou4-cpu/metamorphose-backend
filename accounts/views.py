@@ -1,3 +1,4 @@
+import threading
 import secrets
 import logging
 
@@ -733,34 +734,34 @@ def confirmer_brunch(request):
 </html>
 """
 
-    if email:
+   def envoyer_emails():
+        if email:
+            try:
+                msg = EmailMultiAlternatives(
+                    subject="Méta'Morph'Ose · Confirmation Brunch",
+                    body=f"Bonjour {prenom}, votre place au Brunch est confirmée. Montant déclaré : {montant_str}.",
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    to=[email],
+                )
+                msg.attach_alternative(email_html, "text/html")
+                msg.send(fail_silently=True)
+            except Exception as e:
+                logger.warning(f"Email brunch non envoyé : {e}")
         try:
-            msg = EmailMultiAlternatives(
-                subject="Méta'Morph'Ose · Confirmation Brunch",
-                body=f"Bonjour {prenom}, votre place au Brunch est confirmée. Montant déclaré : {montant_str}.",
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                to=[email],
-            )
-            msg.attach_alternative(email_html, "text/html")
-            msg.send(fail_silently=True)
+            admin_email = settings.ADMIN_EMAIL or settings.EMAIL_HOST_USER
+            if admin_email:
+                send_mail(
+                    subject=f"[MMO] Brunch — {prenom} {nom} · {statut_label} · {montant_str}",
+                    message=f"Nouveau participant Brunch:\n{prenom} {nom}\n{email}\n{telephone}\nStatut: {statut_label}\nMontant: {montant_str}",
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[admin_email],
+                    fail_silently=True,
+                )
         except Exception as e:
-            logger.warning(f"Email brunch non envoyé : {e}")
+            logger.warning(f"Email admin brunch non envoyé : {e}")
 
-    try:
-        admin_email = settings.ADMIN_EMAIL or settings.EMAIL_HOST_USER
-        if admin_email:
-            send_mail(
-                subject=f"[MMO] Brunch — {prenom} {nom} · {statut_label} · {montant_str}",
-                message=f"Nouveau participant Brunch:\n{prenom} {nom}\n{email}\n{telephone}\nStatut: {statut_label}\nMontant: {montant_str}",
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[admin_email],
-                fail_silently=True,
-            )
-    except Exception as e:
-        logger.warning(f"Email admin brunch non envoyé : {e}")
-
+    threading.Thread(target=envoyer_emails, daemon=True).start()
     return Response({"detail": "Inscription Brunch confirmée."}, status=201)
-
 
 @api_view(["PATCH"])
 @permission_classes([IsAuthenticated])
