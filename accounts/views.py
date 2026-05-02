@@ -617,32 +617,33 @@ def valider_paiement_brunch(request):
 </html>
 """
 
-    if reservation.email:
+    def envoyer_emails_brunch():
+        if reservation.email:
+            try:
+                from django.core.mail import EmailMultiAlternatives
+                msg = EmailMultiAlternatives(
+                    subject="Méta'Morph'Ose · Confirmation Brunch des Métamorphosées 2026",
+                    body=f"Bravo {reservation.prenom}, ton paiement de {montant_str} pour le {pass_label} a été déclaré. Prélia te contactera pour confirmer.",
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    to=[reservation.email],
+                )
+                msg.attach_alternative(email_html, "text/html")
+                msg.send(fail_silently=True)
+            except Exception as e:
+                logger.warning(f"Email brunch confirmation non envoyé : {e}")
         try:
-            from django.core.mail import EmailMultiAlternatives
-            msg = EmailMultiAlternatives(
-                subject="Méta'Morph'Ose · Confirmation Brunch des Métamorphosées 2026",
-                body=f"Bravo {reservation.prenom}, ton paiement de {montant_str} pour le {pass_label} a été déclaré. Prélia te contactera pour confirmer.",
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                to=[reservation.email],
-            )
-            msg.attach_alternative(email_html, "text/html")
-            msg.send(fail_silently=True)
+            admin_email = settings.ADMIN_EMAIL or settings.EMAIL_HOST_USER
+            if admin_email:
+                send_mail(
+                    subject=f"[MMO Brunch] {reservation.prenom} {reservation.nom} · {pass_label}",
+                    message=f"Nouvelle réservation Brunch :\n{reservation.prenom} {reservation.nom}\n{reservation.email}\n{reservation.whatsapp}\nPass: {pass_label}\nMontant: {montant_str}",
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[admin_email],
+                    fail_silently=True,
+                )
         except Exception as e:
-            logger.warning(f"Email brunch confirmation non envoyé : {e}")
-
-    try:
-        admin_email = settings.ADMIN_EMAIL or settings.EMAIL_HOST_USER
-        if admin_email:
-            send_mail(
-                subject=f"[MMO Brunch] {reservation.prenom} {reservation.nom} · {pass_label}",
-                message=f"Nouvelle réservation Brunch :\n{reservation.prenom} {reservation.nom}\n{reservation.email}\n{reservation.whatsapp}\nPass: {pass_label}\nMontant: {montant_str}",
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[admin_email],
-                fail_silently=True,
-            )
-    except Exception as e:
-        logger.warning(f"Email admin brunch non envoyé : {e}")
+            logger.warning(f"Email admin brunch non envoyé : {e}")
+    threading.Thread(target=envoyer_emails_brunch, daemon=True).start()
 
     return Response({
         "detail":       "Paiement déclaré.",
