@@ -479,37 +479,3 @@ def partenaire_logo_upload(request):
     except Exception as e:
         return Response({'detail': str(e)}, status=500)
 
-
-# ── ENDPOINT MIGRATE TEMPORAIRE ──────────────────────────────────
-from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
-import subprocess, os
-
-@csrf_exempt
-def run_migrate(request):
-    secret = request.GET.get('secret', '')
-    if secret != os.environ.get('MIGRATE_SECRET', 'mmo_migrate_2026'):
-        return JsonResponse({'error': 'Unauthorized'}, status=403)
-    try:
-        from django.core.management import call_command
-        from io import StringIO
-        out = StringIO()
-        call_command('migrate', '--no-input', stdout=out, stderr=out)
-        return JsonResponse({'result': out.getvalue(), 'status': 'ok'})
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
-
-
-@csrf_exempt
-def run_loaddata(request):
-    secret = request.GET.get('secret', '')
-    if secret != os.environ.get('MIGRATE_SECRET', 'mmo_migrate_2026'):
-        return JsonResponse({'error': 'Unauthorized'}, status=403)
-    try:
-        from django.core.management import call_command
-        from io import StringIO
-        out = StringIO()
-        call_command('loaddata', '/opt/render/project/src/dump_mmo_complet.json', stdout=out, stderr=out)
-        return JsonResponse({'result': out.getvalue(), 'status': 'ok'})
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
