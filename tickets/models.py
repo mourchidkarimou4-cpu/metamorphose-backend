@@ -49,6 +49,7 @@ class Ticket(models.Model):
     email       = models.EmailField()
     telephone   = models.CharField(max_length=20, blank=True)
 
+    montant_paye= models.PositiveIntegerField(default=0, help_text='Montant payé en FCFA')
     code        = models.UUIDField(default=uuid.uuid4, unique=True, editable=False, db_index=True)
     statut      = models.CharField(max_length=10, choices=STATUTS, default='valide')
     scanne_le   = models.DateTimeField(null=True, blank=True)

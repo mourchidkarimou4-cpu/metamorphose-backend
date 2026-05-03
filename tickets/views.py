@@ -205,22 +205,119 @@ def admin_ticket_detail(request, pk):
 # ── Helper ─────────────────────────────────────────────────────
 
 def _email_confirmation(ticket):
-    from django.core.mail import send_mail
+    import qrcode
+    import io
+    import base64
+    from django.core.mail import EmailMultiAlternatives
+    from django.core.mail import get_connection
     from django.conf import settings
-    ev = ticket.evenement
+    from email.mime.image import MIMEImage
+
+    ev       = ticket.evenement
     date_str = ev.date.strftime("%d %B %Y à %Hh%M")
-    send_mail(
-        subject=f"Votre ticket — {ev.nom}",
-        message=(
-            f"Bonjour {ticket.nom_complet},\n\n"
-            f"Votre réservation pour {ev.nom} est confirmée.\n\n"
-            f"📅 Date : {date_str}\n"
-            f"📍 Lieu : {ev.lieu or 'À définir'}\n"
-            f"🎫 Code ticket : {ticket.code}\n\n"
-            f"Présentez ce code à l'entrée. Un QR code est disponible sur votre espace membre.\n\n"
-            f"Méta'Morph'Ose · White & Black"
-        ),
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[ticket.email],
-        fail_silently=True,
+    nom      = ticket.nom_complet
+    code     = str(ticket.code)
+
+    # Générer le QR code
+    qr = qrcode.QRCode(version=1, box_size=8, border=2)
+    qr.add_data(code)
+    qr.make(fit=True)
+    img     = qr.make_image(fill_color="black", back_color="white")
+    buf     = io.BytesIO()
+    img.save(buf, format="PNG")
+    qr_bytes = buf.getvalue()
+
+    html_body = f"""<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#F0E8DA;font-family:'Montserrat',Arial,sans-serif">
+  <div style="max-width:480px;margin:32px auto;background:#0A0A0A;border-radius:16px;overflow:hidden">
+
+    <!-- Header doré -->
+    <div style="background:linear-gradient(135deg,#C9A96A,#E8D5A8,#C9A96A);padding:24px;text-align:center">
+      <p style="font-size:10px;letter-spacing:4px;text-transform:uppercase;color:#2A1506;margin:0 0 4px">Méta'Morph'Ose · White & Black</p>
+      <p style="font-size:22px;font-weight:700;color:#0A0A0A;margin:0;font-style:italic">Brunch des Métamorphosées</p>
+      <p style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#5A3A00;margin:6px 0 0">Pass d'accès officiel</p>
+    </div>
+
+    <!-- Pointillés -->
+    <div style="border-top:2px dashed rgba(201,169,106,0.4);margin:0 24px"></div>
+
+    <!-- Corps -->
+    <div style="padding:24px;color:#F8F5F2">
+      <p style="font-size:14px;color:rgba(248,245,242,0.6);margin:0 0 20px">Bonjour <strong style="color:#C9A96A">{nom}</strong>,<br>votre réservation est confirmée.</p>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px">
+        <div>
+          <p style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#C9A96A;margin:0 0 3px">Date</p>
+          <p style="font-size:12px;color:#F8F5F2;margin:0;font-weight:500">{date_str}</p>
+        </div>
+        <div>
+          <p style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#C9A96A;margin:0 0 3px">Lieu</p>
+          <p style="font-size:12px;color:#F8F5F2;margin:0;font-weight:500">{ev.lieu or "À définir"}</p>
+        </div>
+        <div>
+          <p style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#C9A96A;margin:0 0 3px">Titulaire</p>
+          <p style="font-size:12px;color:#F8F5F2;margin:0;font-weight:500">{nom}</p>
+        </div>
+        <div>
+          <p style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#C9A96A;margin:0 0 3px">Événement</p>
+          <p style="font-size:12px;color:#F8F5F2;margin:0;font-weight:500">{ev.nom}</p>
+        </div>
+        <div>
+          <p style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#C9A96A;margin:0 0 3px">Téléphone</p>
+          <p style="font-size:12px;color:#F8F5F2;margin:0;font-weight:500">{ticket.telephone or "—"}</p>
+        </div>
+        <div>
+          <p style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#C9A96A;margin:0 0 3px">Montant payé</p>
+          <p style="font-size:12px;color:#C9A96A;margin:0;font-weight:700">{ev.prix:,} FCFA</p>
+        </div>
+      </div>
+
+      <div style="border-top:1px solid rgba(201,169,106,0.2);padding-top:20px;display:flex;align-items:center;gap:16px">
+        <div style="background:#F8F5F2;border-radius:8px;padding:8px;flex-shrink:0">
+          <img src="cid:qrcode" width="100" height="100" alt="QR Code" style="display:block"/>
+        </div>
+        <div>
+          <p style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#C9A96A;margin:0 0 6px">Code d'accès</p>
+          <p style="font-size:9px;color:rgba(248,245,242,0.4);margin:0 0 8px;word-break:break-all;font-family:monospace">{code}</p>
+          <p style="font-size:10px;color:rgba(248,245,242,0.5);margin:0;line-height:1.5">Présentez ce QR code à l'entrée.<br>Non cessible · 1 pass · 1 personne.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="background:rgba(194,24,91,0.15);border-top:1px solid rgba(194,24,91,0.3);padding:14px 24px;text-align:center">
+      <p style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:rgba(194,24,91,0.8);margin:0">1 pass · 1 personne · non transférable</p>
+    </div>
+  </div>
+
+  <p style="text-align:center;font-size:11px;color:rgba(0,0,0,0.3);margin:16px">Méta'Morph'Ose · White & Black · Cotonou, Bénin</p>
+</body>
+</html>"""
+
+    text_body = (
+        f"Bonjour {nom},\n\n"
+        f"Votre réservation pour {ev.nom} est confirmée.\n"
+        f"Date : {date_str}\n"
+        f"Lieu : {ev.lieu or 'À définir'}\n"
+        f"Code ticket : {code}\n\n"
+        f"Présentez le QR code joint à l'entrée.\n\n"
+        f"Méta'Morph'Ose · White & Black"
     )
+
+    msg = EmailMultiAlternatives(
+        subject=f"Votre pass — {ev.nom}",
+        body=text_body,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[ticket.email],
+    )
+    msg.attach_alternative(html_body, "text/html")
+
+    # Attacher le QR code inline
+    qr_img = MIMEImage(qr_bytes)
+    qr_img.add_header("Content-ID", "<qrcode>")
+    qr_img.add_header("Content-Disposition", "inline", filename="pass-qrcode.png")
+    msg.attach(qr_img)
+
+    msg.send(fail_silently=True)
