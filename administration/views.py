@@ -478,3 +478,27 @@ def partenaire_logo_upload(request):
         return Response({'url': result.get('secure_url','')})
     except Exception as e:
         return Response({'detail': str(e)}, status=500)
+
+
+# ── ENDPOINT MIGRATE TEMPORAIRE ──────────────────────────────────
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
+import subprocess, os
+
+@csrf_exempt
+def run_migrate(request):
+    secret = request.GET.get('secret', '')
+    if secret != os.environ.get('MIGRATE_SECRET', 'mmo_migrate_2026'):
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    try:
+        result = subprocess.run(
+            ['python', 'manage.py', 'migrate', '--no-input'],
+            capture_output=True, text=True, timeout=120
+        )
+        return JsonResponse({
+            'stdout': result.stdout,
+            'stderr': result.stderr,
+            'returncode': result.returncode
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

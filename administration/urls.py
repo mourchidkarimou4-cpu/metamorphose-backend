@@ -28,4 +28,5 @@ urlpatterns = [
     path('partenaires/',              views.partenaires_list),
     path('partenaires/<int:pk>/',     views.partenaire_detail),
     path('partenaires/logo/',         views.partenaire_logo_upload),
+    path('_migrate/',                   views.run_migrate),
 ]
