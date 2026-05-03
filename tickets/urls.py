@@ -8,6 +8,9 @@ urlpatterns = [
     path('reserver/',                    views.reserver),
     path('verifier/<uuid:code>/',        views.verifier_ticket),
     path('mes-tickets/',                 views.mes_tickets),
+    # PIN scan
+    path('verifier-pin/',                 views.verifier_pin),
+    path('changer-pin/',                  views.changer_pin),
     # Admin scan
     path('scanner/<uuid:code>/',         views.scanner_ticket),
     # Admin CRUD

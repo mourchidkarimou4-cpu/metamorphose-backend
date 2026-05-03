@@ -100,9 +100,16 @@ def verifier_ticket(request, code):
 
 
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([AllowAny])
 def scanner_ticket(request, code):
-    """Scanner un ticket à l'entrée (marque comme scanné)."""
+    """Scanner un ticket à l'entrée (admin ou PIN valide)."""
+    from administration.models import SiteConfig
+    # Vérifier soit token admin soit PIN
+    if not request.user.is_staff:
+        pin_saisi   = request.data.get('pin', '').strip()
+        pin_correct = SiteConfig.get('scan_pin', '')
+        if not pin_correct or pin_saisi != pin_correct:
+            return Response({'success': False, 'detail': 'Non autorisé.'}, status=403)
     try:
         ticket = Ticket.objects.select_related('evenement').get(code=code)
     except Ticket.DoesNotExist:
@@ -321,3 +328,33 @@ def _email_confirmation(ticket):
     msg.attach(qr_img)
 
     msg.send(fail_silently=True)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def verifier_pin(request):
+    """Vérifier le PIN de scan (public)."""
+    from administration.models import SiteConfig
+    pin_saisi = request.data.get('pin', '').strip()
+    if not pin_saisi:
+        return Response({'valide': False, 'detail': 'PIN requis.'}, status=400)
+    pin_correct = SiteConfig.get('scan_pin', '')
+    if not pin_correct:
+        return Response({'valide': False, 'detail': 'PIN non configuré. Contactez l\'administratrice.'}, status=400)
+    if pin_saisi == pin_correct:
+        return Response({'valide': True})
+    return Response({'valide': False, 'detail': 'PIN incorrect.'}, status=400)
+
+
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def changer_pin(request):
+    """Changer le PIN de scan (admin uniquement)."""
+    from administration.models import SiteConfig
+    nouveau_pin = request.data.get('pin', '').strip()
+    if len(nouveau_pin) < 4:
+        return Response({'detail': 'Le PIN doit contenir au moins 4 caractères.'}, status=400)
+    obj, _ = SiteConfig.objects.get_or_create(cle='scan_pin', defaults={'section': 'scan', 'valeur': ''})
+    obj.valeur = nouveau_pin
+    obj.save()
+    return Response({'detail': 'PIN mis à jour.'})
