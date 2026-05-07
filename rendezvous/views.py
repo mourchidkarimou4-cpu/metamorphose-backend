@@ -314,3 +314,51 @@ def admin_disponibilite_detail(request, pk):
     dispo.actif = request.data.get('actif', dispo.actif)
     dispo.save()
     return Response({'success': True})
+
+
+# ── EXPORT CSV RDV ───────────────────────────────────────────────
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def export_rdv_csv(request):
+    import csv
+    from django.http import HttpResponse
+    if not request.user.is_staff:
+        return Response({'error': 'Accès refusé.'}, status=403)
+
+    response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
+    response['Content-Disposition'] = 'attachment; filename="rendez-vous.csv"'
+
+    writer = csv.writer(response, delimiter=';')
+    writer.writerow(['ID','Prénom','Nom','Email','WhatsApp','Pays','Type','Mode','Nb séances','Prix (FCFA)','Date','Heure','Statut','Paiement reçu','Lien réunion','Message','Note admin','Créé le'])
+
+    for r in RendezVous.objects.all():
+        writer.writerow([
+            r.id, r.prenom, r.nom, r.email, r.whatsapp, r.pays,
+            r.get_type_rdv_display(), r.get_mode_display(),
+            r.nb_seances, r.prix,
+            r.date.strftime('%d/%m/%Y'), str(r.heure)[:5],
+            r.get_statut_display(),
+            'Oui' if r.paiement_recu else 'Non',
+            r.lien_reunion, r.message, r.note_admin,
+            r.created_at.strftime('%d/%m/%Y %H:%M'),
+        ])
+    return response
+
+
+# ── MES RDV (membre connecté) ────────────────────────────────────
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def mes_rdv(request):
+    rdvs = RendezVous.objects.filter(email=request.user.email).order_by('-date','-heure')
+    data = [{
+        'id': r.id,
+        'type_rdv': r.type_rdv, 'type_label': r.get_type_rdv_display(),
+        'mode': r.mode, 'mode_label': r.get_mode_display(),
+        'nb_seances': r.nb_seances, 'prix': r.prix,
+        'date': str(r.date), 'heure': str(r.heure)[:5],
+        'statut': r.statut, 'statut_label': r.get_statut_display(),
+        'lien_reunion': r.lien_reunion, 'note_admin': r.note_admin,
+        'duree_rdv': r.duree_rdv, 'est_gratuit': r.est_gratuit,
+        'created_at': r.created_at.strftime('%d/%m/%Y %H:%M'),
+    } for r in rdvs]
+    return Response(data)

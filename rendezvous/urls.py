@@ -8,4 +8,6 @@ urlpatterns = [
     path('admin/<int:pk>/',     views.admin_action_rdv),
     path('admin/disponibilites/',        views.admin_disponibilites),
     path('admin/disponibilites/<int:pk>/', views.admin_disponibilite_detail),
+    path('admin/export-csv/',             views.export_rdv_csv),
+    path('mes-rdv/',                      views.mes_rdv),
 ]
