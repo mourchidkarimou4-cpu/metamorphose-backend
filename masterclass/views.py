@@ -18,6 +18,7 @@ def mc_data(m):
         'complet':          m.complet,
         'gratuite':         m.gratuite,
         'lien_live':        m.lien_live,
+        'slug':             m.slug,
     }
 
 @api_view(['GET'])
@@ -177,3 +178,13 @@ def temoignage_masterclass_supprimer(request, pk):
         return JsonResponse({"status": "ok"})
     except TemoignageMasterclass.DoesNotExist:
         return JsonResponse({"error": "Non trouvé"}, status=404)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def masterclass_par_slug(request, slug):
+    try:
+        mc = Masterclass.objects.get(slug=slug, est_active=True)
+        return Response(mc_data(mc))
+    except Masterclass.DoesNotExist:
+        return Response({'detail': 'Masterclass introuvable.'}, status=404)

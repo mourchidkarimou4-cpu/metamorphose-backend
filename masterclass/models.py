@@ -4,6 +4,7 @@ import cloudinary.models
 
 class Masterclass(models.Model):
     titre       = models.CharField(max_length=200)
+    slug        = models.SlugField(unique=True, blank=True, help_text="ex: ose-etre-toi, art-oratoire")
     description = models.TextField()
     date        = models.DateTimeField()
     image       = cloudinary.models.CloudinaryField('image', folder='metamorphose/masterclass', blank=True, null=True)
