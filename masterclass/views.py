@@ -70,6 +70,7 @@ def admin_masterclasses(request):
 
     mc = Masterclass.objects.create(
         titre=request.data.get('titre', ''),
+        slug=request.data.get('slug', ''),
         description=request.data.get('description', ''),
         date=request.data.get('date'),
         places_max=int(request.data.get('places_max', 100)),
@@ -95,7 +96,7 @@ def admin_masterclass_detail(request, pk):
         mc.delete()
         return Response(status=204)
 
-    for field in ['titre', 'description', 'date', 'places_max', 'lien_live']:
+    for field in ['titre', 'slug', 'description', 'date', 'places_max', 'lien_live']:
         if field in request.data:
             setattr(mc, field, request.data[field])
     for field in ['est_active', 'gratuite']:
