@@ -1,104 +1,5 @@
 [
 {
-  "model": "contenttypes.contenttype",
-  "fields": {
-    "app_label": "admin",
-    "model": "logentry"
-  }
-},
-{
-  "model": "contenttypes.contenttype",
-  "fields": {
-    "app_label": "auth",
-    "model": "group"
-  }
-},
-{
-  "model": "contenttypes.contenttype",
-  "fields": {
-    "app_label": "auth",
-    "model": "permission"
-  }
-},
-{
-  "model": "contenttypes.contenttype",
-  "fields": {
-    "app_label": "contenttypes",
-    "model": "contenttype"
-  }
-},
-{
-  "model": "contenttypes.contenttype",
-  "fields": {
-    "app_label": "sessions",
-    "model": "session"
-  }
-},
-{
-  "model": "contenttypes.contenttype",
-  "fields": {
-    "app_label": "accounts",
-    "model": "customuser"
-  }
-},
-{
-  "model": "contenttypes.contenttype",
-  "fields": {
-    "app_label": "contenu",
-    "model": "demandecontact"
-  }
-},
-{
-  "model": "contenttypes.contenttype",
-  "fields": {
-    "app_label": "contenu",
-    "model": "guide"
-  }
-},
-{
-  "model": "contenttypes.contenttype",
-  "fields": {
-    "app_label": "contenu",
-    "model": "replay"
-  }
-},
-{
-  "model": "contenttypes.contenttype",
-  "fields": {
-    "app_label": "administration",
-    "model": "siteconfig"
-  }
-},
-{
-  "model": "contenttypes.contenttype",
-  "fields": {
-    "app_label": "cadeaux",
-    "model": "cartescadeaux"
-  }
-},
-{
-  "model": "contenttypes.contenttype",
-  "fields": {
-    "app_label": "avis",
-    "model": "temoignage"
-  }
-},
-{
-  "model": "contenttypes.contenttype",
-  "fields": {
-    "app_label": "administration",
-    "model": "listeattente"
-  }
-},
-{
-  "model": "sessions.session",
-  "pk": "zi0ht2dte4jh3h3irnclwwd3lcc6cgnp",
-  "fields": {
-    "session_data": ".eJxVjEEOwiAQRe_C2pCBUhCX7nsGMgOMVA0kpV0Z765NutDtf-_9lwi4rSVsPS9hTuIilDj9boTxkesO0h3rrcnY6rrMJHdFHrTLqaX8vB7u30HBXr61yYrBsTkrQwyedULnEaxBjQwAA2k3MKuRnCNnFNgRtIYcB0powYv3B9Y5N08:1w7JDe:df55_et6wHKtQBOK8RLuc_-9ZE8TtTxKXdOPQC3tEFE",
-    "expire_date": "2026-04-13T20:28:18.736Z"
-  }
-},
-{
   "model": "administration.siteconfig",
   "pk": 1,
   "fields": {
@@ -391,7 +292,7 @@
   "pk": 33,
   "fields": {
     "cle": "prelia_certifications",
-    "valeur": "Coach en Image certifiée|Styliste|Leader Oratrice — AIL",
+    "valeur": "Coach en Image certifiée|Styliste certifiée|Oratrice & leader certifiée|Experte en transformation Personnelle|Thérapeute du cœur certifiée|Coach Mind Education certifiée\n",
     "section": "prelia"
   }
 },
@@ -670,7 +571,7 @@
   "pk": 64,
   "fields": {
     "cle": "footer_tel1",
-    "valeur": "+229 01 96 11 40 93",
+    "valeur": "+229 96 11 40 93",
     "section": "footer"
   }
 },
@@ -679,7 +580,7 @@
   "pk": 65,
   "fields": {
     "cle": "footer_tel2",
-    "valeur": "+229 01 59 37 65 60",
+    "valeur": "+229 59 37 65 60",
     "section": "footer"
   }
 },
@@ -877,7 +778,7 @@
   "pk": 87,
   "fields": {
     "cle": "temo_intro",
-    "valeur": "Chaque femme qui entre dans Méta'Morph'Ose entame un chemin de révélation. Un chemin vers plus de confiance, plus d'alignement et plus d'audace.",
+    "valeur": "Grâce au programme Métamorphose, j'ai brisé le cycle de l'hésitation pour devenir une femme d'action qui avance avec audace, guidée par sa foi et plus rien ne m'arrête !",
     "section": "temoignages"
   }
 },
@@ -913,7 +814,7 @@
   "pk": 91,
   "fields": {
     "cle": "photo_prelia",
-    "valeur": "https://metamorphose-backend.onrender.com/media/images/photo_prelia_RJ3TVtG.jpeg",
+    "valeur": "https://res.cloudinary.com/dp7v6vlgs/image/upload/v1776681323/metamorphose/photo_prelia.jpg",
     "section": "images"
   }
 },
@@ -922,7 +823,7 @@
   "pk": 92,
   "fields": {
     "cle": "logo_site",
-    "valeur": "https://metamorphose-backend.onrender.com/media/images/logo_site_c4dicvp.png",
+    "valeur": "https://res.cloudinary.com/dp7v6vlgs/image/upload/v1776681273/metamorphose/logo_site.png",
     "section": "images"
   }
 },
@@ -931,7 +832,7 @@
   "pk": 93,
   "fields": {
     "cle": "logo_white_black",
-    "valeur": "https://metamorphose-backend.onrender.com/media/images/logo_white_black.png",
+    "valeur": "https://res.cloudinary.com/dp7v6vlgs/image/upload/v1776681283/metamorphose/logo_white_black.png",
     "section": "images"
   }
 },
@@ -940,8 +841,8 @@
   "pk": 94,
   "fields": {
     "cle": "image_hero",
-    "valeur": "https://metamorphose-backend.onrender.com/media/images/image_hero.jpg",
-    "section": "images"
+    "valeur": "",
+    "section": "hero"
   }
 },
 {
@@ -949,7 +850,7 @@
   "pk": 95,
   "fields": {
     "cle": "favicon",
-    "valeur": "",
+    "valeur": "https://res.cloudinary.com/dp7v6vlgs/image/upload/v1776681291/metamorphose/favicon.png",
     "section": "images"
   }
 },
@@ -1003,7 +904,7 @@
   "pk": 101,
   "fields": {
     "cle": "stat_femmes",
-    "valeur": "100",
+    "valeur": "+100",
     "section": "stats_site"
   }
 },
@@ -1012,7 +913,7 @@
   "pk": 102,
   "fields": {
     "cle": "stat_pays",
-    "valeur": "8",
+    "valeur": "+10",
     "section": "stats_site"
   }
 },
@@ -1075,8 +976,8 @@
   "pk": 109,
   "fields": {
     "cle": "slide_1",
-    "valeur": "https://metamorphose-backend.onrender.com/media/images/slide_1_W6wBXd8.jpg",
-    "section": "slides"
+    "valeur": "",
+    "section": "images"
   }
 },
 {
@@ -1085,7 +986,7 @@
   "fields": {
     "cle": "slide_2",
     "valeur": "",
-    "section": "images"
+    "section": "hero"
   }
 },
 {
@@ -1094,7 +995,7 @@
   "fields": {
     "cle": "slide_3",
     "valeur": "",
-    "section": "images"
+    "section": "hero"
   }
 },
 {
@@ -1103,7 +1004,7 @@
   "fields": {
     "cle": "slide_4",
     "valeur": "",
-    "section": "images"
+    "section": "hero"
   }
 },
 {
@@ -1112,7 +1013,7 @@
   "fields": {
     "cle": "slide_5",
     "valeur": "",
-    "section": "images"
+    "section": "hero"
   }
 },
 {
@@ -1242,699 +1143,147 @@
   }
 },
 {
-  "model": "cadeaux.cartescadeaux",
-  "pk": 1,
+  "model": "administration.siteconfig",
+  "pk": 128,
   "fields": {
-    "code": "MMO-7UKN5LAJ",
-    "formule": "F3",
-    "acheteur_nom": "BITOCHO",
-    "acheteur_email": "mourchidkarimou4@gmail.com",
-    "acheteur_tel": "+22952926779",
-    "destinataire_nom": "Mourchid",
-    "destinataire_email": "",
-    "occasion": "Simplement par amour",
-    "message_perso": "",
-    "statut": "utilisee",
-    "date_creation": "2026-03-31T14:09:13.833Z",
-    "date_expiration": "2027-03-31",
-    "date_utilisation": "2026-03-31T14:10:22.709Z",
-    "utilisee_par": ""
+    "cle": "maintenance_active",
+    "valeur": "0",
+    "section": "systeme"
   }
 },
 {
-  "model": "cadeaux.cartescadeaux",
-  "pk": 2,
+  "model": "administration.siteconfig",
+  "pk": 129,
   "fields": {
-    "code": "MMO-6SS2SADN",
-    "formule": "F1",
-    "acheteur_nom": "mourchid",
-    "acheteur_email": "mourchidkarimou4@gmail.com",
-    "acheteur_tel": "+22952926779",
-    "destinataire_nom": "mama",
-    "destinataire_email": "",
-    "occasion": "Anniversaire",
-    "message_perso": "hbd",
-    "statut": "payee",
-    "date_creation": "2026-03-31T14:49:38.660Z",
-    "date_expiration": "2027-03-31",
-    "date_utilisation": null,
-    "utilisee_par": ""
+    "cle": "maintenance_message",
+    "valeur": "Le site est en maintenance. Revenez bientôt.",
+    "section": "systeme"
   }
 },
 {
-  "model": "auth.permission",
+  "model": "administration.siteconfig",
+  "pk": 130,
   "fields": {
-    "name": "Can add log entry",
-    "content_type": [
-      "admin",
-      "logentry"
-    ],
-    "codename": "add_logentry"
+    "cle": "live_actif",
+    "valeur": "1",
+    "section": "live"
   }
 },
 {
-  "model": "auth.permission",
+  "model": "administration.siteconfig",
+  "pk": 131,
   "fields": {
-    "name": "Can change log entry",
-    "content_type": [
-      "admin",
-      "logentry"
-    ],
-    "codename": "change_logentry"
+    "cle": "live_room_name",
+    "valeur": "masterclass-1776109557873",
+    "section": "live"
   }
 },
 {
-  "model": "auth.permission",
+  "model": "administration.siteconfig",
+  "pk": 132,
   "fields": {
-    "name": "Can delete log entry",
-    "content_type": [
-      "admin",
-      "logentry"
-    ],
-    "codename": "delete_logentry"
+    "cle": "stat_satisfaction",
+    "valeur": "98%",
+    "section": "stats_site"
   }
 },
 {
-  "model": "auth.permission",
+  "model": "administration.siteconfig",
+  "pk": 133,
   "fields": {
-    "name": "Can view log entry",
-    "content_type": [
-      "admin",
-      "logentry"
-    ],
-    "codename": "view_logentry"
+    "cle": "Témoignage ",
+    "valeur": "100+",
+    "section": "stats_site"
   }
 },
 {
-  "model": "auth.permission",
+  "model": "administration.siteconfig",
+  "pk": 134,
   "fields": {
-    "name": "Can add permission",
-    "content_type": [
-      "auth",
-      "permission"
-    ],
-    "codename": "add_permission"
+    "cle": "stat_label4",
+    "valeur": "",
+    "section": "stats_site"
   }
 },
 {
-  "model": "auth.permission",
+  "model": "administration.siteconfig",
+  "pk": 135,
   "fields": {
-    "name": "Can change permission",
-    "content_type": [
-      "auth",
-      "permission"
-    ],
-    "codename": "change_permission"
+    "cle": "masterclass_temo_photo_1",
+    "valeur": "https://res.cloudinary.com/dp7v6vlgs/image/upload/v1777132604/metamorphose/masterclass_temo_photo_1.jpg",
+    "section": "images"
   }
 },
 {
-  "model": "auth.permission",
+  "model": "administration.siteconfig",
+  "pk": 136,
   "fields": {
-    "name": "Can delete permission",
-    "content_type": [
-      "auth",
-      "permission"
-    ],
-    "codename": "delete_permission"
+    "cle": "brunch_whatsapp_groupe",
+    "valeur": "https://chat.whatsapp.com/D2kH7XoDJm74Zzs6OHyX9f?mode=gi_t",
+    "section": "brunch"
   }
 },
 {
-  "model": "auth.permission",
+  "model": "administration.siteconfig",
+  "pk": 137,
   "fields": {
-    "name": "Can view permission",
-    "content_type": [
-      "auth",
-      "permission"
-    ],
-    "codename": "view_permission"
+    "cle": "scan_pin",
+    "valeur": "2026",
+    "section": "scan"
   }
 },
 {
-  "model": "auth.permission",
+  "model": "administration.siteconfig",
+  "pk": 138,
   "fields": {
-    "name": "Can add group",
-    "content_type": [
-      "auth",
-      "group"
-    ],
-    "codename": "add_group"
+    "cle": "mc2_date",
+    "valeur": "2026-12-31T17:00:00Z",
+    "section": "masterclass"
   }
 },
 {
-  "model": "auth.permission",
+  "model": "administration.siteconfig",
+  "pk": 139,
   "fields": {
-    "name": "Can change group",
-    "content_type": [
-      "auth",
-      "group"
-    ],
-    "codename": "change_group"
+    "cle": "mc2_whatsapp",
+    "valeur": "",
+    "section": "masterclass"
   }
 },
 {
-  "model": "auth.permission",
+  "model": "administration.siteconfig",
+  "pk": 140,
   "fields": {
-    "name": "Can delete group",
-    "content_type": [
-      "auth",
-      "group"
-    ],
-    "codename": "delete_group"
+    "cle": "mc2_titre",
+    "valeur": "Ose t'exprimer, Affirme ta voix",
+    "section": "masterclass"
   }
 },
 {
-  "model": "auth.permission",
+  "model": "administration.siteconfig",
+  "pk": 141,
   "fields": {
-    "name": "Can view group",
-    "content_type": [
-      "auth",
-      "group"
-    ],
-    "codename": "view_group"
+    "cle": "mc2_sous_titre",
+    "valeur": "Les clés pour développer une communication impactante",
+    "section": "masterclass"
   }
 },
 {
-  "model": "auth.permission",
+  "model": "administration.siteconfig",
+  "pk": 142,
   "fields": {
-    "name": "Can add content type",
-    "content_type": [
-      "contenttypes",
-      "contenttype"
-    ],
-    "codename": "add_contenttype"
+    "cle": "mc2_btn_inscription",
+    "valeur": "JE RÉSERVE MA PLACE MAINTENANT",
+    "section": "masterclass"
   }
 },
 {
-  "model": "auth.permission",
+  "model": "administration.siteconfig",
+  "pk": 143,
   "fields": {
-    "name": "Can change content type",
-    "content_type": [
-      "contenttypes",
-      "contenttype"
-    ],
-    "codename": "change_contenttype"
-  }
-},
-{
-  "model": "auth.permission",
-  "fields": {
-    "name": "Can delete content type",
-    "content_type": [
-      "contenttypes",
-      "contenttype"
-    ],
-    "codename": "delete_contenttype"
-  }
-},
-{
-  "model": "auth.permission",
-  "fields": {
-    "name": "Can view content type",
-    "content_type": [
-      "contenttypes",
-      "contenttype"
-    ],
-    "codename": "view_contenttype"
-  }
-},
-{
-  "model": "auth.permission",
-  "fields": {
-    "name": "Can add session",
-    "content_type": [
-      "sessions",
-      "session"
-    ],
-    "codename": "add_session"
-  }
-},
-{
-  "model": "auth.permission",
-  "fields": {
-    "name": "Can change session",
-    "content_type": [
-      "sessions",
-      "session"
-    ],
-    "codename": "change_session"
-  }
-},
-{
-  "model": "auth.permission",
-  "fields": {
-    "name": "Can delete session",
-    "content_type": [
-      "sessions",
-      "session"
-    ],
-    "codename": "delete_session"
-  }
-},
-{
-  "model": "auth.permission",
-  "fields": {
-    "name": "Can view session",
-    "content_type": [
-      "sessions",
-      "session"
-    ],
-    "codename": "view_session"
-  }
-},
-{
-  "model": "auth.permission",
-  "fields": {
-    "name": "Can add user",
-    "content_type": [
-      "accounts",
-      "customuser"
-    ],
-    "codename": "add_customuser"
-  }
-},
-{
-  "model": "auth.permission",
-  "fields": {
-    "name": "Can change user",
-    "content_type": [
-      "accounts",
-      "customuser"
-    ],
-    "codename": "change_customuser"
-  }
-},
-{
-  "model": "auth.permission",
-  "fields": {
-    "name": "Can delete user",
-    "content_type": [
-      "accounts",
-      "customuser"
-    ],
-    "codename": "delete_customuser"
-  }
-},
-{
-  "model": "auth.permission",
-  "fields": {
-    "name": "Can view user",
-    "content_type": [
-      "accounts",
-      "customuser"
-    ],
-    "codename": "view_customuser"
-  }
-},
-{
-  "model": "auth.permission",
-  "fields": {
-    "name": "Can add demande contact",
-    "content_type": [
-      "contenu",
-      "demandecontact"
-    ],
-    "codename": "add_demandecontact"
-  }
-},
-{
-  "model": "auth.permission",
-  "fields": {
-    "name": "Can change demande contact",
-    "content_type": [
-      "contenu",
-      "demandecontact"
-    ],
-    "codename": "change_demandecontact"
-  }
-},
-{
-  "model": "auth.permission",
-  "fields": {
-    "name": "Can delete demande contact",
-    "content_type": [
-      "contenu",
-      "demandecontact"
-    ],
-    "codename": "delete_demandecontact"
-  }
-},
-{
-  "model": "auth.permission",
-  "fields": {
-    "name": "Can view demande contact",
-    "content_type": [
-      "contenu",
-      "demandecontact"
-    ],
-    "codename": "view_demandecontact"
-  }
-},
-{
-  "model": "auth.permission",
-  "fields": {
-    "name": "Can add guide",
-    "content_type": [
-      "contenu",
-      "guide"
-    ],
-    "codename": "add_guide"
-  }
-},
-{
-  "model": "auth.permission",
-  "fields": {
-    "name": "Can change guide",
-    "content_type": [
-      "contenu",
-      "guide"
-    ],
-    "codename": "change_guide"
-  }
-},
-{
-  "model": "auth.permission",
-  "fields": {
-    "name": "Can delete guide",
-    "content_type": [
-      "contenu",
-      "guide"
-    ],
-    "codename": "delete_guide"
-  }
-},
-{
-  "model": "auth.permission",
-  "fields": {
-    "name": "Can view guide",
-    "content_type": [
-      "contenu",
-      "guide"
-    ],
-    "codename": "view_guide"
-  }
-},
-{
-  "model": "auth.permission",
-  "fields": {
-    "name": "Can add replay",
-    "content_type": [
-      "contenu",
-      "replay"
-    ],
-    "codename": "add_replay"
-  }
-},
-{
-  "model": "auth.permission",
-  "fields": {
-    "name": "Can change replay",
-    "content_type": [
-      "contenu",
-      "replay"
-    ],
-    "codename": "change_replay"
-  }
-},
-{
-  "model": "auth.permission",
-  "fields": {
-    "name": "Can delete replay",
-    "content_type": [
-      "contenu",
-      "replay"
-    ],
-    "codename": "delete_replay"
-  }
-},
-{
-  "model": "auth.permission",
-  "fields": {
-    "name": "Can view replay",
-    "content_type": [
-      "contenu",
-      "replay"
-    ],
-    "codename": "view_replay"
-  }
-},
-{
-  "model": "auth.permission",
-  "fields": {
-    "name": "Can add site config",
-    "content_type": [
-      "administration",
-      "siteconfig"
-    ],
-    "codename": "add_siteconfig"
-  }
-},
-{
-  "model": "auth.permission",
-  "fields": {
-    "name": "Can change site config",
-    "content_type": [
-      "administration",
-      "siteconfig"
-    ],
-    "codename": "change_siteconfig"
-  }
-},
-{
-  "model": "auth.permission",
-  "fields": {
-    "name": "Can delete site config",
-    "content_type": [
-      "administration",
-      "siteconfig"
-    ],
-    "codename": "delete_siteconfig"
-  }
-},
-{
-  "model": "auth.permission",
-  "fields": {
-    "name": "Can view site config",
-    "content_type": [
-      "administration",
-      "siteconfig"
-    ],
-    "codename": "view_siteconfig"
-  }
-},
-{
-  "model": "auth.permission",
-  "fields": {
-    "name": "Can add cartes cadeaux",
-    "content_type": [
-      "cadeaux",
-      "cartescadeaux"
-    ],
-    "codename": "add_cartescadeaux"
-  }
-},
-{
-  "model": "auth.permission",
-  "fields": {
-    "name": "Can change cartes cadeaux",
-    "content_type": [
-      "cadeaux",
-      "cartescadeaux"
-    ],
-    "codename": "change_cartescadeaux"
-  }
-},
-{
-  "model": "auth.permission",
-  "fields": {
-    "name": "Can delete cartes cadeaux",
-    "content_type": [
-      "cadeaux",
-      "cartescadeaux"
-    ],
-    "codename": "delete_cartescadeaux"
-  }
-},
-{
-  "model": "auth.permission",
-  "fields": {
-    "name": "Can view cartes cadeaux",
-    "content_type": [
-      "cadeaux",
-      "cartescadeaux"
-    ],
-    "codename": "view_cartescadeaux"
-  }
-},
-{
-  "model": "auth.permission",
-  "fields": {
-    "name": "Can add temoignage",
-    "content_type": [
-      "avis",
-      "temoignage"
-    ],
-    "codename": "add_temoignage"
-  }
-},
-{
-  "model": "auth.permission",
-  "fields": {
-    "name": "Can change temoignage",
-    "content_type": [
-      "avis",
-      "temoignage"
-    ],
-    "codename": "change_temoignage"
-  }
-},
-{
-  "model": "auth.permission",
-  "fields": {
-    "name": "Can delete temoignage",
-    "content_type": [
-      "avis",
-      "temoignage"
-    ],
-    "codename": "delete_temoignage"
-  }
-},
-{
-  "model": "auth.permission",
-  "fields": {
-    "name": "Can view temoignage",
-    "content_type": [
-      "avis",
-      "temoignage"
-    ],
-    "codename": "view_temoignage"
-  }
-},
-{
-  "model": "auth.permission",
-  "fields": {
-    "name": "Can add liste attente",
-    "content_type": [
-      "administration",
-      "listeattente"
-    ],
-    "codename": "add_listeattente"
-  }
-},
-{
-  "model": "auth.permission",
-  "fields": {
-    "name": "Can change liste attente",
-    "content_type": [
-      "administration",
-      "listeattente"
-    ],
-    "codename": "change_listeattente"
-  }
-},
-{
-  "model": "auth.permission",
-  "fields": {
-    "name": "Can delete liste attente",
-    "content_type": [
-      "administration",
-      "listeattente"
-    ],
-    "codename": "delete_listeattente"
-  }
-},
-{
-  "model": "auth.permission",
-  "fields": {
-    "name": "Can view liste attente",
-    "content_type": [
-      "administration",
-      "listeattente"
-    ],
-    "codename": "view_listeattente"
-  }
-},
-{
-  "model": "accounts.customuser",
-  "fields": {
-    "password": "pbkdf2_sha256$1200000$1nW8lqm4kOe4SB4YjTuGnn$5boEHPLusXaBT9bS+xpSInbpyDDsgHlQANuMMGZFHs8=",
-    "last_login": "2026-03-30T20:28:18.727Z",
-    "is_superuser": true,
-    "username": "admin",
-    "first_name": "",
-    "last_name": "",
-    "is_staff": true,
-    "is_active": true,
-    "date_joined": "2026-03-30T20:17:52.578Z",
-    "email": "admin@gmail.com",
-    "whatsapp": "",
-    "pays": "",
-    "formule": "",
-    "actif": true,
-    "groups": [],
-    "user_permissions": []
-  }
-},
-{
-  "model": "avis.temoignage",
-  "pk": 4,
-  "fields": {
-    "user": null,
-    "prenom": "Zoé",
-    "pays": "",
-    "formule": "F1",
-    "type_temo": "video",
-    "texte": "",
-    "note": 5,
-    "video_url": "",
-    "video_fichier": "temoignages/videos/IMG_0502.mp4",
-    "audio_fichier": "",
-    "photo_avant": "",
-    "photo_apres": "",
-    "statut": "approuve",
-    "en_vedette": false,
-    "date": "2026-04-01T12:32:10.124Z"
-  }
-},
-{
-  "model": "avis.temoignage",
-  "pk": 8,
-  "fields": {
-    "user": null,
-    "prenom": "aa",
-    "pays": "",
-    "formule": "F3",
-    "type_temo": "texte",
-    "texte": "ff",
-    "note": 5,
-    "video_url": "",
-    "video_fichier": "",
-    "audio_fichier": "",
-    "photo_avant": "temoignages/avant/237e226bc056e8ab0c61ddaa909345eb.jpg",
-    "photo_apres": "temoignages/apres/793c003b5be8665a71734baed81349aa.jpg",
-    "statut": "approuve",
-    "en_vedette": false,
-    "date": "2026-04-01T12:57:15.109Z"
-  }
-},
-{
-  "model": "avis.temoignage",
-  "pk": 9,
-  "fields": {
-    "user": null,
-    "prenom": "gg",
-    "pays": "",
-    "formule": "F2",
-    "type_temo": "texte",
-    "texte": "ggg",
-    "note": 5,
-    "video_url": "",
-    "video_fichier": "",
-    "audio_fichier": "",
-    "photo_avant": "temoignages/avant/e67672aa2f536f93dbdc27a9d7a6f7bd.jpg",
-    "photo_apres": "temoignages/apres/afc738768b49cf49a957db2c0936b096.jpg",
-    "statut": "approuve",
-    "en_vedette": false,
-    "date": "2026-04-01T12:57:48.615Z"
+    "cle": "mc2_places_max",
+    "valeur": "500",
+    "section": "masterclass"
   }
 }
 ]
